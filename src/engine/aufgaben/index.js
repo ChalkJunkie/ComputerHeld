@@ -6,6 +6,7 @@ import { scrollen } from "./scrollen.js";
 import { markieren } from "./markieren.js";
 import { ziehen } from "./ziehen.js";
 import { einsortieren } from "./einsortieren.js";
+import { editor } from "./editor.js";
 import { abfolge } from "./abfolge.js";
 
 export const AUFGABENTYPEN = {
@@ -15,5 +16,6 @@ export const AUFGABENTYPEN = {
   markieren,      // Rahmen aufziehen
   ziehen,         // Ziehen und Ablegen
   einsortieren,   // Edelsteine auf farbige Fächer ziehen (Boss)
+  editor,         // Textfenster für Tasten und Tastenkürzel (Welt 2)
   abfolge,        // mehrere Aufgaben hintereinander (Boss)
 };

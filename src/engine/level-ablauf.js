@@ -184,7 +184,9 @@ export function starteLevel(wurzel, level, optionen) {
         melde(zufall(TEXTE.lob));
         bitKurz("jubelnd");
       },
-      beiFehler() {
+      /* hinweis (darf fehlen): ein genauer Tipp vom Aufgabentyp,
+         z. B. „Halte dabei die Strg-Taste gedrückt.“ */
+      beiFehler(hinweis) {
         fehler++;
         fehlerInFolge++;
         // Nach mehreren Fehlern hintereinander hilft Bit von selbst weiter
@@ -192,7 +194,7 @@ export function starteLevel(wurzel, level, optionen) {
           fehlerInFolge = 0;
           zeigeHilfe();
         } else {
-          melde(zufall(TEXTE.trost));
+          melde(hinweis || zufall(TEXTE.trost));
           setzeBit("stehend");
         }
       },

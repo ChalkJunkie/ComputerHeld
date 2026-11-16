@@ -206,7 +206,7 @@ canvas.sprite { image-rendering: pixelated; display: block; flex: none; }
   padding: 0.5rem; text-align: center; font-size: 0.85rem;
   background: var(--weiss); border: var(--rahmen) solid var(--tinte);
 }
-.hilfe-tafel[hidden] { display: none; }
+.hilfe-tafel[hidden], .hilfe-tafel:empty { display: none; }
 .hilfe-tafel p { margin: 0; }
 .rueckmeldung { font-weight: bold; min-height: 1.4em; margin: 0.2rem 0 0; }
 
@@ -316,3 +316,75 @@ canvas.sprite { image-rendering: pixelated; display: block; flex: none; }
 .meldung { min-height: 1.5rem; font-weight: bold; margin-top: 0.5rem; }
 .meldung.gut { color: var(--gut); }
 .meldung.achtung { color: var(--achtung); }
+
+/* =====================================================================
+   WELT 2: Textfenster und Tastatur-Bild
+   ===================================================================== */
+.editor-buehne {
+  position: absolute; inset: 0 0 16px 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  padding: 8px; box-sizing: border-box;
+}
+.vorlage { font-size: 1.2rem; background: var(--weiss); border: 3px solid var(--tinte); padding: 0.2rem 0.8rem; }
+.vorlage[hidden] { display: none; }
+.vorlage .getippt { color: var(--gut); font-weight: bold; }
+.vorlage .naechstes { background: var(--akzent); outline: 2px solid var(--tinte); font-weight: bold; }
+
+.editor-fenster {
+  width: min(680px, 92%); background: var(--weiss);
+  border: var(--rahmen) solid var(--tinte); box-shadow: 4px 4px 0 var(--tinte);
+}
+.editor-titel {
+  display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+  padding: 0.2rem 0.6rem; background: var(--welt-dunkel); color: var(--weiss); font-weight: bold;
+}
+.speicher-status { font-size: 0.85rem; padding: 0 0.4rem; background: #ffb8a0; color: var(--tinte); border: 2px solid var(--tinte); }
+.speicher-status.gut { background: #9be07a; }
+.editor-koerper { position: relative; min-height: 6.2rem; }
+.editor-text {
+  font-size: 1.4rem; line-height: 1.6; padding: 0.5rem 0.8rem;
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.editor-text[hidden], .editor-felder[hidden], .editor-dialog[hidden] { display: none; }
+/* Schreibstrich: steht still, blinkt absichtlich nicht */
+.schreibstrich {
+  display: inline-block; width: 3px; height: 1.25em; margin: 0 -1.5px;
+  background: var(--tinte); vertical-align: text-bottom;
+}
+.editor-text .markiert { background: #9cc3ff; }
+.editor-text .falsch { background: #d6402b; color: var(--weiss); font-weight: bold; }
+
+.editor-felder { padding: 0.5rem 0.8rem; display: flex; flex-direction: column; gap: 0.4rem; }
+.feld-zeile { display: flex; align-items: center; gap: 0.8rem; }
+.feld-name { width: 5rem; font-weight: bold; }
+.feld { width: 14rem; height: 1.8rem; border: 3px solid var(--grau-text); background: var(--weiss); padding-left: 0.3rem; display: flex; align-items: center; }
+.feld.fokus { border: 5px solid #1b4fd8; }
+.feld.ziel-feld { outline: 4px dashed var(--tinte); outline-offset: 3px; }
+.ziel-schild-klein { font-weight: bold; background: var(--akzent); border: 3px solid var(--tinte); padding: 0 0.4rem; }
+
+.editor-dialog { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(46, 28, 18, 0.25); }
+.dialog-box { background: var(--papier); border: var(--rahmen) solid var(--tinte); box-shadow: 4px 4px 0 var(--tinte); padding: 0.6rem 1rem; text-align: center; }
+.dialog-box p { margin-bottom: 0.5rem; font-weight: bold; }
+.dialog-knoepfe { display: flex; gap: 0.8rem; justify-content: center; }
+.dialog-knopf { border: 3px solid var(--tinte); background: var(--creme); padding: 0.1rem 0.9rem; }
+.dialog-knopf.mit-hilfe { outline: 4px dashed var(--tinte); outline-offset: 3px; background: var(--akzent); }
+
+.editor-status { display: flex; gap: 1.2rem; border-top: 3px solid var(--tinte); padding: 0.2rem 0.6rem; font-size: 0.9rem; background: var(--papier); }
+.feststell.an { background: var(--akzent); font-weight: bold; padding: 0 0.3rem; }
+
+/* Tastatur-Bild */
+.tastatur {
+  display: flex; flex-direction: column; gap: 4px; padding: 8px;
+  background: #3a3f4a; border: var(--rahmen) solid var(--tinte);
+}
+.tasten-reihe { display: flex; gap: 4px; }
+.taste {
+  width: calc(var(--b) * 40px - 4px); height: 32px; box-sizing: border-box; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: bold; color: var(--tinte);
+  background: var(--papier); border: 3px solid var(--tinte); border-bottom-width: 5px;
+}
+.taste.wort { font-size: 11px; font-weight: normal; }
+.taste.luecke { visibility: hidden; }
+.taste.zeigen { background: var(--akzent); outline: 3px solid var(--weiss); }
+.taste.gedrueckt { background: #8fcf5a; border-bottom-width: 3px; }
