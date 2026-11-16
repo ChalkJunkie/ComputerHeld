@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Technik-Test: Tastatur und Maus</title>
+  <!--
+    TECHNIK-TEST FÜR DIE SCHULRECHNER
+    Diese Seite ist absichtlich eine einzige Datei ohne weitere Abhängigkeiten.
+    Sie lässt sich per Doppelklick öffnen (auch vom USB-Stick oder Netzlaufwerk)
+    und prüft, welche Tasten und Mausaktionen das Spiel im Browser erkennen
+    und abfangen kann.
+  -->
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: Verdana, Arial, sans-serif;
+      font-size: 20px;
+      line-height: 1.4;
+      background: #f4f1e8;
+      color: #2e1c12;
+    }
+    h1 { font-size: 30px; margin: 0 0 8px; }
+    h2 { font-size: 24px; margin: 32px 0 8px; }
+    p  { margin: 0 0 12px; max-width: 60em; }
+    kbd {
+      font-family: "Courier New", monospace;
+      font-weight: bold;
+      background: #fff;
+      border: 2px solid #2e1c12;
+      border-bottom-width: 4px;
+      padding: 0 6px;
+      white-space: nowrap;
+    }
+
+    /* Warnhinweis */
+    .achtung {
+      border: 4px solid #8a4b00;
+      background: #fff3d6;
+      padding: 12px 16px;
+      max-width: 60em;
+    }
+
+    /* Tabelle mit den Prüfpunkten */
+    table { border-collapse: collapse; width: 100%; max-width: 75em; }
+    th, td {
+      border: 2px solid #2e1c12;
+      padding: 8px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #e2dbc8; }
+    td.status { width: 9em; font-weight: bold; }
+    td.detail { font-size: 17px; }
+
+    /* Die drei Zustände – immer mit Wort UND Farbe, nie nur Farbe */
+    tr.offen   td.status { background: #e9e4d8; color: #4a4038; }
+    tr.ok      td.status { background: #1f6b2c; color: #ffffff; }
+    tr.problem td.status { background: #a33a00; color: #ffffff; }
+
+    /* Mausfeld */
+    #mausfeld {
+      width: 100%;
+      max-width: 40em;
+      height: 180px;
+      border: 4px dashed #2e1c12;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      user-select: none;
+      box-sizing: border-box;
+    }
+
+    textarea {
+      width: 100%;
+      max-width: 75em;
+      height: 16em;
+      font-family: "Courier New", monospace;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    button {
+      font-size: 20px;
+      padding: 10px 20px;
+      margin: 0 12px 12px 0;
+      border: 4px solid #2e1c12;
+      background: #f7e4bc;
+      color: #2e1c12;
+      cursor: pointer;
+    }
+    button:hover, button:focus { background: #ffd98a; }
+    #kopiert { font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <h1>Technik-Test: Tastatur und Maus</h1>
+  <p>Diese Seite prüft, was das Lernspiel auf diesem Rechner erkennen kann.
+     Bitte der Reihe nach die Tasten drücken. Jede Zeile wird
+     <b>„in Ordnung“</b>, sobald die Eingabe erkannt wurde.</p>
+
+  <p class="achtung"><b>Bitte nicht drücken:</b>
+     <kbd>Alt</kbd>+<kbd>F4</kbd>, <kbd>Strg</kbd>+<kbd>W</kbd> und
+     <kbd>Strg</kbd>+<kbd>N</kbd>. Diese Tasten kann keine Webseite abfangen –
+     sie schließen das Fenster oder öffnen ein neues.</p>
+
+  <h2>1. Tastatur</h2>
+  <p>Zuerst einmal irgendwo auf diese Seite klicken, dann die Tasten drücken.
+     Öffnet sich dabei ein Fenster des Browsers (Speichern, Drucken, Suchen),
+     bitte mit <kbd>Esc</kbd> schließen – die Seite merkt sich das als Problem.</p>
+  <table>
+    <thead><tr><th>Eingabe</th><th>Ergebnis</th><th>Was der Browser gemeldet hat</th></tr></thead>
+    <tbody id="tastenTabelle"></tbody>
+  </table>
+
+  <h2>2. Maus</h2>
+  <p>Diese Aktionen bitte <b>im gestrichelten Feld</b> ausführen.</p>
+  <div id="mausfeld">Mausfeld:<br>hier klicken, rechtsklicken, doppelklicken und am Mausrad drehen</div>
+  <br>
+  <table>
+    <thead><tr><th>Eingabe</th><th>Ergebnis</th><th>Was der Browser gemeldet hat</th></tr></thead>
+    <tbody id="mausTabelle"></tbody>
+  </table>
+
+  <h2>3. Ergebnis</h2>
+  <p>Wenn alles ausprobiert ist: Text unten kopieren und an Claude zurückgeben.
+     Der Text enthält nur technische Angaben zu Browser und Bildschirm,
+     keine persönlichen Daten.</p>
+  <button id="kopieren" type="button">Ergebnis kopieren</button>
+  <button id="neustart" type="button">Test neu starten</button>
+  <span id="kopiert" role="status"></span>
+  <br>
+  <textarea id="bericht" readonly></textarea>
+
+<script>
+/* =====================================================================
+   PRÜFPUNKTE
+   Jede Zeile der Tabellen ist hier beschrieben. Zum Ergänzen einfach
+   einen weiteren Eintrag hinzufügen.
+     id     – interner Name
+     text   – Beschriftung in der Tabelle (darf HTML enthalten)
+     zeichen – Liste von Zeichen, die alle getippt werden müssen
+     strg   – Buchstabe einer Strg-Kombination (wird abgefangen)
+     taste  – Name einer einzelnen Sondertaste (event.key)
+   ===================================================================== */
+const TASTEN_PRUEFUNGEN = [
+  { id: "at",      text: "<kbd>AltGr</kbd>+<kbd>Q</kbd> für @", zeichen: ["@"] },
+  { id: "euro",    text: "<kbd>AltGr</kbd>+<kbd>E</kbd> für €", zeichen: ["€"] },
+  { id: "umlaute", text: "Umlaute und ß: <kbd>ä</kbd> <kbd>ö</kbd> <kbd>ü</kbd> <kbd>ß</kbd>", zeichen: ["ä", "ö", "ü", "ß"] },
+  { id: "gross",   text: "<kbd>Umschalt</kbd>+<kbd>Ä</kbd> für großes Ä", zeichen: ["Ä"] },
+  { id: "strgS",   text: "<kbd>Strg</kbd>+<kbd>S</kbd> (Speichern)",       strg: "s" },
+  { id: "strgZ",   text: "<kbd>Strg</kbd>+<kbd>Z</kbd> (Rückgängig)",      strg: "z" },
+  { id: "strgA",   text: "<kbd>Strg</kbd>+<kbd>A</kbd> (Alles markieren)", strg: "a" },
+  { id: "strgC",   text: "<kbd>Strg</kbd>+<kbd>C</kbd> (Kopieren)",        strg: "c" },
+  { id: "strgX",   text: "<kbd>Strg</kbd>+<kbd>X</kbd> (Ausschneiden)",    strg: "x" },
+  { id: "strgV",   text: "<kbd>Strg</kbd>+<kbd>V</kbd> (Einfügen)",        strg: "v" },
+  { id: "strgF",   text: "<kbd>Strg</kbd>+<kbd>F</kbd> (Suchen)",          strg: "f" },
+  { id: "strgP",   text: "<kbd>Strg</kbd>+<kbd>P</kbd> (Drucken)",         strg: "p" },
+  { id: "tab",     text: "<kbd>Tab</kbd>",                 taste: "Tab" },
+  { id: "enter",   text: "<kbd>Enter</kbd>",               taste: "Enter" },
+  { id: "rueck",   text: "<kbd>Rücktaste</kbd> (←, über Enter)", taste: "Backspace" },
+  { id: "entf",    text: "<kbd>Entf</kbd>",                taste: "Delete" },
+  { id: "esc",     text: "<kbd>Esc</kbd> (bitte als Letztes)", taste: "Escape" },
+];
+
+const MAUS_PRUEFUNGEN = [
+  { id: "links",  text: "Linksklick" },
+  { id: "rechts", text: "Rechtsklick (es darf <b>kein</b> Menü des Browsers erscheinen)" },
+  { id: "doppel", text: "Doppelklick" },
+  { id: "radRunter", text: "Mausrad nach unten drehen" },
+  { id: "radHoch",   text: "Mausrad nach oben drehen" },
+];
+
+/* Wie lange (in Millisekunden) nach einer Strg-Kombination beobachtet wird,
+   ob der Browser trotzdem ein eigenes Fenster öffnet. */
+const BEOBACHTUNGSZEIT = 800;
+
+/* ---------------------------------------------------------------------
+   Zustand: pro Prüfpunkt "offen", "ok" oder "problem" plus Detailtext
+   --------------------------------------------------------------------- */
+const zustand = {};
+const WORTE = { offen: "noch offen", ok: "in Ordnung", problem: "Problem" };
+
+function baueTabelle(tbodyId, pruefungen) {
+  const tbody = document.getElementById(tbodyId);
+  tbody.innerHTML = "";
+  for (const p of pruefungen) {
+    zustand[p.id] = { status: "offen", detail: "", getippt: [] };
+    const tr = document.createElement("tr");
+    tr.id = "zeile-" + p.id;
+    tr.className = "offen";
+    tr.innerHTML = `<td>${p.text}</td><td class="status">noch offen</td><td class="detail"></td>`;
+    tbody.append(tr);
+  }
+}
+
+function setze(id, status, detail) {
+  zustand[id].status = status;
+  zustand[id].detail = detail;
+  const tr = document.getElementById("zeile-" + id);
+  tr.className = status;
+  tr.querySelector(".status").textContent = WORTE[status];
+  tr.querySelector(".detail").textContent = detail;
+  schreibeBericht();
+}
+
+/* Beschreibt ein Tastenereignis so, dass man AltGr-Eigenheiten erkennt */
+function beschreibe(e) {
+  const teile = [`key="${e.key}"`, `code="${e.code}"`];
+  if (e.ctrlKey)  teile.push("Strg");
+  if (e.altKey)   teile.push("Alt");
+  if (e.shiftKey) teile.push("Umschalt");
+  if (e.getModifierState && e.getModifierState("AltGraph")) teile.push("AltGraph");
+  return teile.join(", ");
+}
+
+/* ---------------------------------------------------------------------
+   Tastatur
+   --------------------------------------------------------------------- */
+let beobachtung = null; // läuft gerade eine Beobachtung nach Strg+Taste?
+
+window.addEventListener("keydown", (e) => {
+  if (e.repeat) return; // gedrückt gehaltene Taste nicht mehrfach zählen
+
+  // WICHTIG: AltGr meldet Windows als Strg+Alt. Eine echte Strg-Kombination
+  // erkennen wir deshalb nur, wenn Alt NICHT gleichzeitig gedrückt ist.
+  const echteStrgKombi = e.ctrlKey && !e.altKey && !e.metaKey;
+
+  for (const p of TASTEN_PRUEFUNGEN) {
+
+    // a) Zeichen tippen (@, €, Umlaute)
+    if (p.zeichen && p.zeichen.includes(e.key)) {
+      const z = zustand[p.id];
+      if (!z.getippt.includes(e.key)) z.getippt.push(e.key);
+      const fehlt = p.zeichen.filter((c) => !z.getippt.includes(c));
+      if (fehlt.length === 0) setze(p.id, "ok", "Erkannt: " + beschreibe(e));
+      else setze(p.id, "offen", "Erkannt: " + z.getippt.join(" ") + " – es fehlt noch: " + fehlt.join(" "));
+    }
+
+    // b) Strg-Kombination: abfangen und beobachten, ob der Browser trotzdem reagiert
+    if (p.strg && echteStrgKombi && e.key.toLowerCase() === p.strg) {
+      e.preventDefault();
+      const info = beschreibe(e);
+      setze(p.id, "ok", "Erkannt und abgefangen: " + info);
+      clearTimeout(beobachtung && beobachtung.timer);
+      beobachtung = {
+        id: p.id, info,
+        timer: setTimeout(() => { beobachtung = null; }, BEOBACHTUNGSZEIT),
+      };
+    }
+
+    // c) Einzelne Sondertaste
+    if (p.taste && e.key === p.taste && !e.ctrlKey && !e.altKey) {
+      e.preventDefault(); // z. B. Tab soll nicht zum nächsten Knopf springen
+      setze(p.id, "ok", "Erkannt: " + beschreibe(e));
+    }
+  }
+}, true);
+
+// Verliert die Seite kurz nach einer Strg-Kombination den Fokus, hat der
+// Browser sehr wahrscheinlich ein eigenes Fenster geöffnet (Speichern, Drucken …).
+window.addEventListener("blur", () => {
+  if (!beobachtung) return;
+  setze(beobachtung.id, "problem",
+    "Taste erkannt, aber der Browser hat trotzdem ein eigenes Fenster geöffnet. " + beobachtung.info);
+  clearTimeout(beobachtung.timer);
+  beobachtung = null;
+});
+
+/* ---------------------------------------------------------------------
+   Maus
+   --------------------------------------------------------------------- */
+const mausfeld = document.getElementById("mausfeld");
+
+mausfeld.addEventListener("click", (e) => {
+  setze("links", "ok", `Erkannt: Taste ${e.button} (0 = links)`);
+});
+mausfeld.addEventListener("contextmenu", (e) => {
+  e.preventDefault(); // Browser-Menü unterdrücken
+  setze("rechts", "ok", "Erkannt und abgefangen. Falls trotzdem ein Menü erschien: bitte melden.");
+});
+mausfeld.addEventListener("dblclick", () => {
+  setze("doppel", "ok", "Erkannt.");
+});
+mausfeld.addEventListener("wheel", (e) => {
+  e.preventDefault(); // Seite soll dabei nicht rollen
+  const text = `Erkannt: deltaY=${Math.round(e.deltaY)}, deltaMode=${e.deltaMode}`;
+  if (e.deltaY > 0) setze("radRunter", "ok", text);
+  if (e.deltaY < 0) setze("radHoch", "ok", text);
+}, { passive: false });
+
+/* ---------------------------------------------------------------------
+   Bericht zum Kopieren
+   --------------------------------------------------------------------- */
+function schreibeBericht() {
+  const zeilen = [
+    "TECHNIK-TEST ComputerHeld",
+    "Browser: " + navigator.userAgent,
+    "Sprache: " + navigator.language,
+    `Bildschirm: ${screen.width} x ${screen.height}, Fenster: ${innerWidth} x ${innerHeight}, Pixelverhältnis: ${devicePixelRatio}`,
+    "Geöffnet als: " + (location.protocol === "file:" ? "lokale Datei" : "Webseite"),
+    "",
+  ];
+  for (const p of [...TASTEN_PRUEFUNGEN, ...MAUS_PRUEFUNGEN]) {
+    const z = zustand[p.id];
+    if (!z) continue;
+    const name = p.text.replace(/<[^>]+>/g, ""); // HTML-Zeichen entfernen
+    zeilen.push(`[${WORTE[z.status]}] ${name}` + (z.detail ? `\n      ${z.detail}` : ""));
+  }
+  document.getElementById("bericht").value = zeilen.join("\n");
+}
+
+document.getElementById("kopieren").addEventListener("click", async () => {
+  const feld = document.getElementById("bericht");
+  const meldung = document.getElementById("kopiert");
+  try {
+    await navigator.clipboard.writeText(feld.value);
+    meldung.textContent = "Kopiert!";
+  } catch (fehler) {
+    // Ersatzweg, falls der Browser das direkte Kopieren nicht erlaubt
+    feld.focus();
+    feld.select();
+    const geklappt = document.execCommand && document.execCommand("copy");
+    meldung.textContent = geklappt
+      ? "Kopiert!"
+      : "Bitte den markierten Text mit Rechtsklick → Kopieren kopieren.";
+  }
+});
+
+function starte() {
+  baueTabelle("tastenTabelle", TASTEN_PRUEFUNGEN);
+  baueTabelle("mausTabelle", MAUS_PRUEFUNGEN);
+  document.getElementById("kopiert").textContent = "";
+  schreibeBericht();
+}
+document.getElementById("neustart").addEventListener("click", starte);
+starte();
+</script>
+</body>
+</html>

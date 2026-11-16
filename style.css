@@ -1,0 +1,236 @@
+/* =====================================================================
+   AUSSEHEN DES SPIELS
+   Farben und Größen stehen ganz oben als Variablen und lassen sich
+   dort an einer Stelle ändern.
+   ===================================================================== */
+
+/* Pixelschrift „Press Start 2P“ (offene Lizenz, liegt im Repository) */
+@font-face {
+  font-family: "Pixelschrift";
+  src: url("assets/schriften/PressStart2P-Regular.ttf") format("truetype");
+  font-display: swap;
+}
+
+:root {
+  --tinte: #2e1c12;      /* Schrift und Rahmen */
+  --papier: #f4f1e8;     /* Hintergrund */
+  --weiss: #ffffff;
+  --creme: #f7e4bc;      /* Knöpfe */
+  --akzent: #ffd98a;     /* Knopf unter dem Mauszeiger */
+  --grau: #e2dbc8;       /* gesperrte Felder */
+  --grau-text: #5a5046;
+  --gut: #1f6b2c;
+  --achtung: #a33a00;
+  /* Farben der aktuellen Welt (werden vom Programm gesetzt) */
+  --welt-hell: #d9efb8;
+  --welt-mittel: #8fcf5a;
+  --welt-dunkel: #3f7d2a;
+  --rahmen: 4px;
+}
+
+/* Schriftgröße: Alle Maße hängen an dieser einen Zahl. */
+html { font-size: 20px; }
+html[data-schrift="gross"] { font-size: 23px; }
+html[data-schrift="sehrgross"] { font-size: 26px; }
+
+body {
+  margin: 0;
+  font-family: Verdana, "DejaVu Sans", Arial, sans-serif;
+  line-height: 1.4;
+  background: var(--papier);
+  color: var(--tinte);
+}
+p { margin: 0 0 0.5rem; }
+h1, h2 { margin: 0; }
+h2 { font-size: 1.1rem; margin-bottom: 0.4rem; }
+
+.pixel { font-family: "Pixelschrift", "Courier New", monospace; line-height: 1.5; }
+/* Keine verschmolzenen Buchstaben (sonst wird aus „fi“ ein einziges Zeichen) */
+.pixel, .knopf { font-variant-ligatures: none; }
+
+/* Sprites immer mit harten Pixelkanten */
+canvas.sprite { image-rendering: pixelated; display: block; flex: none; }
+
+#app { height: 100vh; display: flex; flex-direction: column; }
+
+.bildschirm {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.8rem 1.4rem;
+  box-sizing: border-box;
+  overflow: auto;
+}
+
+/* ---------------- Knöpfe ---------------- */
+.knopf {
+  font-family: "Pixelschrift", "Courier New", monospace;
+  font-size: 0.7rem;
+  line-height: 1.4;
+  padding: 0.7rem 0.9rem;
+  color: var(--tinte);
+  background: var(--creme);
+  border: var(--rahmen) solid var(--tinte);
+  box-shadow: 4px 4px 0 var(--tinte);
+  cursor: pointer;
+}
+.knopf:hover, .knopf:focus-visible { background: var(--akzent); }
+.knopf:focus-visible, .welt-kachel:focus-visible, .level-kachel:focus-visible {
+  outline: 4px solid #1b4fd8;
+  outline-offset: 3px;
+}
+.knopf:active { transform: translate(4px, 4px); box-shadow: none; }
+.knopf.klein { font-size: 0.6rem; padding: 0.5rem 0.7rem; }
+.knopf.gross { font-size: 1rem; padding: 0.9rem 1.6rem; background: #9be07a; }
+.knopf.gross:hover, .knopf.gross:focus-visible { background: #c1f0a8; }
+.knopf.gewaehlt { background: var(--tinte); color: var(--weiss); }
+.knopf.warn { background: #ffb8a0; }
+.knopfreihe { display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem; }
+
+/* ---------------- Kopfzeile ---------------- */
+.kopf { display: flex; align-items: center; gap: 1rem; flex: none; }
+.kopf h1 { font-size: 1rem; flex: 1; }
+.sternzaehler { display: inline-flex; align-items: center; gap: 0.3rem; font-weight: bold; white-space: nowrap; }
+.sterne { display: inline-flex; gap: 0.15rem; }
+
+/* ---------------- Sprechblase ---------------- */
+.sprechblase {
+  background: var(--weiss);
+  border: var(--rahmen) solid var(--tinte);
+  padding: 0.6rem 0.9rem;
+  box-sizing: border-box;
+}
+.sprechblase p:last-child { margin-bottom: 0; }
+.hinweis { font-weight: bold; color: var(--achtung); }
+
+/* ---------------- Start ---------------- */
+.start { align-items: center; justify-content: center; gap: 1rem; text-align: center; }
+.titel { font-size: 2.2rem; }
+.untertitel { font-size: 1.1rem; }
+.start-mitte { display: flex; align-items: center; gap: 1.2rem; text-align: left; }
+.start-mitte .sprechblase { max-width: 24rem; }
+
+/* ---------------- Weltkarte ---------------- */
+.kartenfeld {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 3rem 2.2fr 3rem 1fr;
+  align-items: center;
+}
+.welt-gruppe { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+/* Der Weg zwischen den Welten: eine Reihe kleiner Trittsteine */
+.weg { height: 12px; background: repeating-linear-gradient(90deg, var(--tinte) 0 12px, transparent 12px 20px); }
+.welt-kachel {
+  font: inherit;
+  color: var(--tinte);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+  padding: 0.8rem;
+  min-height: 6.5rem;
+  text-align: left;
+  background: var(--welt-mittel);
+  border: var(--rahmen) solid var(--tinte);
+  /* unten ein dunkler Streifen wie eine Blockkante */
+  box-shadow: inset 0 -12px 0 var(--welt-dunkel), 4px 4px 0 var(--tinte);
+  padding-bottom: 1.2rem;
+  cursor: pointer;
+}
+.welt-kachel:hover:not(:disabled) { background: var(--welt-hell); }
+.welt-nummer { font-size: 0.6rem; }
+.welt-name { font-size: 0.8rem; }
+.welt-kachel.gesperrt, .level-kachel.gesperrt {
+  background: var(--grau);
+  color: var(--grau-text);
+  box-shadow: 4px 4px 0 var(--grau-text);
+  border-color: var(--grau-text);
+  cursor: default;
+}
+.sperrtext { font-size: 0.8rem; }
+.kartenhinweis { text-align: center; flex: none; }
+
+/* ---------------- Welt: Level-Übersicht ---------------- */
+.welt { background: var(--welt-hell); }
+.level-liste { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.9rem; }
+.level-kachel {
+  font: inherit;
+  color: var(--tinte);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.7rem;
+  min-height: 6rem;
+  text-align: left;
+  background: var(--weiss);
+  border: var(--rahmen) solid var(--tinte);
+  box-shadow: 4px 4px 0 var(--tinte);
+  cursor: pointer;
+}
+.level-kachel:hover:not(:disabled) { background: var(--akzent); }
+.level-kachel.boss:not(.gesperrt) { background: var(--welt-mittel); }
+.level-nummer { font-size: 0.7rem; }
+.level-titel { flex: 1; }
+
+/* ---------------- Level ---------------- */
+.level { gap: 0.5rem; overflow: hidden; }
+.phasen { display: flex; gap: 0.4rem; list-style: none; margin: 0; padding: 0; font-size: 0.8rem; }
+.phasen li { padding: 0.2rem 0.6rem; border: 3px solid var(--grau-text); color: var(--grau-text); background: var(--papier); }
+.phasen li.erledigt { border-color: var(--tinte); color: var(--tinte); background: var(--grau); }
+.phasen li.aktiv { border-color: var(--tinte); color: var(--weiss); background: var(--tinte); font-weight: bold; }
+
+.spielflaeche {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  background: var(--welt-hell);
+  border: var(--rahmen) solid var(--tinte);
+  /* unten ein Streifen „Boden“ in der Farbe der Welt */
+  box-shadow: inset 0 -16px 0 var(--welt-mittel);
+}
+.bit-leiste { flex: none; display: flex; align-items: flex-end; gap: 0.8rem; min-height: 128px; }
+.bit-leiste .sprechblase { flex: 1; display: flex; align-items: center; gap: 1rem; min-height: 5.5rem; }
+.blasentext { flex: 1; }
+.blasenknoepfe { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: flex-end; }
+.zaehler { font-size: 0.9rem; min-width: 5rem; text-align: right; align-self: center; }
+
+/* Zielscheiben-Aufgabe */
+.ziel { position: absolute; }
+.ziel.mit-hilfe { outline: 6px dashed var(--tinte); outline-offset: 10px; }
+.ziel-schild {
+  position: absolute; left: 50%; bottom: calc(100% + 18px); transform: translateX(-50%);
+  background: var(--weiss); border: 3px solid var(--tinte); padding: 0 0.5rem;
+  font-weight: bold; white-space: nowrap;
+}
+.haltebalken { height: 10px; margin-top: 4px; border: 3px solid var(--tinte); background: var(--weiss); }
+.haltebalken div { height: 100%; width: 0; background: var(--gut); }
+.demo-zeiger { position: absolute; pointer-events: none; }
+
+/* Auswertung */
+.auswertung {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.8rem;
+}
+.sternreihe { display: flex; gap: 1rem; }
+
+/* ---------------- Einstellungen ---------------- */
+.einstellungs-spalten { display: grid; grid-template-columns: 1fr 1.4fr; gap: 2rem; }
+.auswahl { border: none; margin: 0 0 1rem; padding: 0; display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.auswahl legend { font-weight: bold; margin-bottom: 0.4rem; padding: 0; }
+.klein-text { font-size: 0.85rem; color: var(--grau-text); }
+.code-anzeige {
+  display: block; font-size: 1rem; letter-spacing: 0.05em;
+  background: var(--weiss); border: var(--rahmen) solid var(--tinte);
+  padding: 0.7rem; margin-bottom: 0.8rem; user-select: all; overflow-wrap: anywhere;
+}
+.code-eingabe {
+  font-family: "Courier New", monospace; font-size: 1.1rem; font-weight: bold;
+  padding: 0.5rem; border: var(--rahmen) solid var(--tinte); width: 16rem; text-transform: uppercase;
+}
+.meldung { min-height: 1.5rem; font-weight: bold; margin-top: 0.5rem; }
+.meldung.gut { color: var(--gut); }
+.meldung.achtung { color: var(--achtung); }
