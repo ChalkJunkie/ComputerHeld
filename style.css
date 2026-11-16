@@ -473,3 +473,63 @@ canvas.sprite { image-rendering: pixelated; display: block; flex: none; }
 .prog-lied { display: flex; flex-direction: column; gap: 0.3rem; flex: 1; }
 .prog-balken { height: 12px; border: 3px solid var(--tinte); background: var(--weiss); }
 .prog-balken div { width: 40%; height: 100%; background: var(--welt-dunkel); }
+
+/* =====================================================================
+   DATEI-EXPLORER (ab Welt 4)
+   ===================================================================== */
+.fenster[data-programm="explorer"] .fenster-inhalt { padding: 0; }
+.explorer { position: relative; display: flex; flex-direction: column; height: 100%; }
+.ex-leiste {
+  flex: none; display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.6rem;
+  border-bottom: 3px solid var(--tinte); background: var(--papier);
+}
+.ex-knopf {
+  position: relative; font: inherit; font-size: 0.85rem; padding: 0.2rem 0.6rem; cursor: pointer;
+  color: var(--tinte); background: var(--creme); border: 3px solid var(--tinte);
+}
+.ex-knopf:hover:not(:disabled) { background: var(--akzent); }
+.ex-knopf:disabled { opacity: 0.45; cursor: default; }
+.ex-adresse {
+  flex: 1; display: flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.6rem;
+  background: var(--weiss); border: 3px solid var(--tinte); font-weight: bold;
+}
+.ex-stueck { cursor: pointer; padding: 0 0.2rem; }
+.ex-stueck:hover { background: var(--akzent); }
+.ex-pfeil { color: var(--grau-text); }
+.ex-haupt { flex: 1; min-height: 0; display: flex; }
+.ex-seite {
+  width: 11rem; flex: none; display: flex; flex-direction: column; gap: 0.2rem; padding: 0.4rem;
+  border-right: 3px solid var(--tinte); background: #f7f3ff;
+}
+.ex-seite-eintrag {
+  position: relative; display: flex; align-items: center; gap: 0.4rem; padding: 0.15rem 0.4rem;
+  cursor: pointer; border: 3px solid transparent;
+}
+.ex-seite-eintrag:hover { background: var(--akzent); }
+.ex-seite-eintrag.aktiv { background: var(--welt-hell); border-color: var(--tinte); font-weight: bold; }
+.ex-inhalt {
+  flex: 1; overflow: auto; padding: 0.8rem 0.8rem 2.5rem;
+  display: flex; flex-wrap: wrap; align-content: flex-start; gap: 0.6rem;
+}
+.ex-eintrag {
+  position: relative; width: 9.5rem; box-sizing: border-box; display: flex; flex-direction: column; align-items: center;
+  gap: 0.2rem; padding: 0.3rem; text-align: center; border: 3px solid transparent;
+}
+.ex-eintrag:hover { background: #eef3ff; }
+.ex-eintrag.ausgewaehlt { background: #cfe0ff; border-color: #1b4fd8; }
+.ex-name { font-size: 0.85rem; overflow-wrap: anywhere; }
+.ex-herkunft { font-size: 0.7rem; color: var(--grau-text); }
+.ex-eingabe { width: 100%; box-sizing: border-box; font: inherit; font-size: 0.85rem; padding: 0.1rem; border: 3px solid #1b4fd8; }
+.ex-leer { color: var(--grau-text); }
+.ex-geist { position: absolute; z-index: 20; pointer-events: none; opacity: 0.8; }
+.explorer .ablage-ziel { background: #c4f5b0; border-color: var(--gut); }
+.explorer .kontextmenue { z-index: 16; }
+.ex-info {
+  position: absolute; top: 3.5rem; left: 50%; transform: translateX(-50%); z-index: 45; min-width: 20rem;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; padding: 0.6rem 1rem;
+  background: var(--papier); border: var(--rahmen) solid var(--tinte); box-shadow: 4px 4px 0 var(--tinte);
+}
+.ex-info[hidden] { display: none; }
+.ex-info-zeilen { display: grid; grid-template-columns: auto 1fr; gap: 0.2rem 0.6rem; }
+.ex-info-a { font-weight: bold; }
+.desktop-schild.rechts { left: calc(100% + 8px); bottom: auto; top: 50%; transform: translateY(-50%); }

@@ -12,6 +12,10 @@
           wiederherstellen, schliessen, taskleiste, aktivieren
    Bevor eine Aktion wirkt, fragt der Desktop den „Prüfer“ (die Aufgabe).
    Sagt der Prüfer false, passiert nichts.
+
+   Programme mit eigenen Aktionen (z. B. der Explorer) bekommen beim
+   Öffnen einen „Kontext“: darin ausloesen() zum Melden von Aktionen und
+   registriere(fn), damit sie erlaubte Aktionen selbst ausführen.
    ===================================================================== */
 
 import { PROGRAMME } from "./programme.js";
@@ -60,12 +64,16 @@ export function baueDesktop(container, optionen = {}) {
   let startOffen = false;
   let hilfeZiel = null;        // diese Stelle wird beim Üben hervorgehoben
   let hilfeText = "Hier klicken";
+  let programmHandler = [];    // Programme, die eigene Aktionen ausführen
+  let markiert = null;         // von der Hilfe hervorgehobenes Element
 
   /* ---------- Aktionen ---------- */
+  /* gibt true zurück, wenn die Aktion gewirkt hat */
   function ausloesen(aktion) {
-    if (pruefer(aktion) === false) return;
+    if (pruefer(aktion) === false) return false;
     fuehreAus(aktion);
     beiAktion(aktion);
+    return true;
   }
 
   function aktiviere(p) {
@@ -114,12 +122,15 @@ export function baueDesktop(container, optionen = {}) {
         else aktiviere(p);
         break;
       case "aktivieren": aktiviere(p); break;
+      default:
+        // Aktionen eines Programms (z. B. Explorer: umbenennen, löschen …)
+        programmHandler.forEach((fn) => fn(aktion));
     }
     zeichne();
   }
 
   /* ---------- Fenster ---------- */
-  function erstelleFenster(p, zustand) {
+  function erstelleFenster(p, zustand, kontext = {}) {
     const prog = PROGRAMME[p];
     const nummer = Object.keys(PROGRAMME).indexOf(p);
     const element = el("div", "fenster");
@@ -139,7 +150,7 @@ export function baueDesktop(container, optionen = {}) {
     leiste.append(knoepfe.minimieren, knoepfe.groesse, knoepfe.schliessen);
     titel.append(leiste);
     const inhalt = el("div", "fenster-inhalt");
-    inhalt.append(prog.inhalt());
+    inhalt.append(prog.inhalt({ ...kontext, ausloesen, registriere: (fn) => programmHandler.push(fn) }));
     element.append(titel, inhalt);
 
     // Klick auf einen Fensterknopf soll nicht zusätzlich „Fenster anklicken“ sein
@@ -165,6 +176,7 @@ export function baueDesktop(container, optionen = {}) {
   startmenue.append(el("div", "startmenue-titel", "Programme"));
   const kachelFeld = el("div", "startmenue-kacheln");
   for (const [p, prog] of Object.entries(PROGRAMME)) {
+    if (prog.imStartmenue === false) continue;
     const k = knopf("start-kachel", prog.name, erzeugeSprite(prog.symbol, { faktor: 3 }), el("span", "", prog.name));
     k.addEventListener("click", () => ausloesen({ art: "oeffnen", programm: p }));
     kacheln[p] = k;
@@ -209,10 +221,14 @@ export function baueDesktop(container, optionen = {}) {
       taskleiste.append(taskKnoepfe[p]);
     }
 
-    // Hilfe: Stelle zum Klicken hervorheben
-    wurzel.querySelectorAll(".mit-hilfe").forEach((e) => e.classList.remove("mit-hilfe"));
-    wurzel.querySelectorAll(".desktop-schild").forEach((e) => e.remove());
+    // Hilfe: Stelle zum Klicken hervorheben (nur die eigene Markierung
+    // entfernen – Programme wie der Explorer markieren selbst)
+    if (markiert) {
+      markiert.classList.remove("mit-hilfe");
+      markiert.querySelector(":scope > .desktop-schild")?.remove();
+    }
     const ziel = hilfeZiel && elementFuer(hilfeZiel);
+    markiert = ziel || null;
     if (ziel) {
       ziel.classList.add("mit-hilfe");
       const schild = el("span", "desktop-schild", hilfeText);
@@ -242,14 +258,16 @@ export function baueDesktop(container, optionen = {}) {
     element: wurzel,
 
     /* Anfangszustand setzen, z. B.
-       { offen: [{ programm: "malen", zustand: "maximiert" }], aktiv: "malen" } */
+       { offen: [{ programm: "malen", zustand: "maximiert" }], aktiv: "malen" }
+       start.kontext wird an die Programme weitergegeben (z. B. Dateisystem) */
     setze(start = {}) {
       for (const f of fenster.values()) f.element.remove();
       fenster.clear();
       stapel = [];
       geoeffnet = [];
+      programmHandler = [];
       startOffen = false;
-      for (const { programm, zustand = "normal" } of start.offen || []) erstelleFenster(programm, zustand);
+      for (const { programm, zustand = "normal" } of start.offen || []) erstelleFenster(programm, zustand, start.kontext);
       aktiv = start.aktiv || vorderstesSichtbares(null);
       if (aktiv) aktiviere(aktiv);
       zeichne();

@@ -4,13 +4,16 @@
      name    – so heißt es im Startmenü, in der Taskleiste und im Fenster
      symbol  – Pixel-Symbol aus sprites/programme.js
      inhalt  – Funktion, die den Inhalt des Fensters baut (nur zum Anschauen)
+     imStartmenue – false: erscheint nicht im Startmenü
    Die Reihenfolge hier ist auch die Reihenfolge im Startmenü.
    ===================================================================== */
 
 import {
   SYMBOL_NOTIZEN, SYMBOL_MALEN, SYMBOL_RECHNER, SYMBOL_MUSIK, SYMBOL_FOTOS, BILD_HAUS,
 } from "../../sprites/programme.js";
+import { ORDNER } from "../../sprites/dateien.js";
 import { erzeugeSprite } from "../engine/sprite-render.js";
+import { baueExplorer } from "./explorer.js";
 
 function el(tag, klasse, text) {
   const e = document.createElement(tag);
@@ -86,6 +89,16 @@ export const PROGRAMME = {
       ganz.append(erzeugeSprite(SYMBOL_FOTOS, { faktor: 9 }), el("span", "", "Ausflug in die Berge"));
       return ganz;
     },
+  },
+
+
+  // Der Explorer braucht ein Dateisystem (kommt aus den Level-Daten) und
+  // erscheint deshalb nicht im Startmenü.
+  explorer: {
+    name: "Explorer",
+    symbol: ORDNER,
+    imStartmenue: false,
+    inhalt: (kontext) => baueExplorer(kontext),
   },
 
 };

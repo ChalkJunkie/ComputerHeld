@@ -8,6 +8,7 @@ import { ziehen } from "./ziehen.js";
 import { einsortieren } from "./einsortieren.js";
 import { editor } from "./editor.js";
 import { desktop } from "./desktop.js";
+import { explorer } from "./explorer.js";
 import { abfolge } from "./abfolge.js";
 
 export const AUFGABENTYPEN = {
@@ -19,5 +20,6 @@ export const AUFGABENTYPEN = {
   einsortieren,   // Edelsteine auf farbige Fächer ziehen (Boss)
   editor,         // Textfenster für Tasten und Tastenkürzel (Welt 2)
   desktop,        // Fenster, Taskleiste und Startmenü (Welt 3)
+  explorer,       // Dateien und Ordner im Explorer (Welt 4)
   abfolge,        // mehrere Aufgaben hintereinander (Boss)
 };
