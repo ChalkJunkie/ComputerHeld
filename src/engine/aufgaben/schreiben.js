@@ -1,0 +1,360 @@
+/* =====================================================================
+   AUFGABENTYP „SCHREIBEN“ (Welt 5: Programmpalast)
+   Das Textprogramm (src/desktop/schreiben.js) ist bildschirmgroß offen.
+   Das Kind soll speichern, Schrift und Farbe ändern, fett/kursiv/
+   unterstrichen setzen, Bilder einfügen und „Speichern unter“ nutzen.
+
+   Einstellungen (aus den Level-Daten):
+     runden    – wie viele Aufgaben
+     gemischt  – false: Aufgaben in der angegebenen Reihenfolge (Standard: gemischt)
+     aufgaben  – Liste von Aufgaben, jede so:
+       {
+         start: {
+           dokument: { name: "Brief.docx", ort: "/Dokumente", gespeichert: false,
+                       zeilen: ["Liebe Oma,", …] }
+                     (name: null = neues Dokument, noch nie gespeichert)
+           dateien:  ["Dokumente/Schule/"]  – zusätzliche Ordner für „Speichern unter“
+           weiter:   true = Dokument und Dateien der vorigen Aufgabe weiterbenutzen
+         },
+         schritte: [{ ziel: { … }, ansage: "…" }]
+       }
+     Ziele:
+       { gespeichert: true }                     Speichern (egal wie)
+       { gespeichert: true, nurSymbol: true }    nur mit dem Speichern-Symbol
+       { format: { zeile: "Einladung", fett: true, groesse: 36 } }
+           Eigenschaften: schrift, groesse, farbe, fett, kursiv, unterstrichen
+       { bild: { bild: "haus", nach: "Einladung" } }   (nach darf fehlen)
+       { gespeichertUnter: { ort: "/Dokumente/Schule", name: "Referat.docx" } }
+     Mögliche Werte stehen oben in src/desktop/schreiben.js.
+
+   Falsche Änderungen wirken nicht – Bit erklärt, was gesucht ist.
+   ===================================================================== */
+
+import { baueDesktop } from "../../desktop/desktop.js";
+import { baueDateisystem, teile, elternVon, verbinde } from "../../desktop/dateisystem.js";
+import { neuesDokument, FARBEN, BILDER, ortName } from "../../desktop/schreiben.js";
+import { mischen, zeigeMaus, demoBuehne } from "./hilfsmittel.js";
+
+const RUNDE_PAUSE_MS = 900;
+const KNOEPFE_AN_AUS = ["fett", "kursiv", "unterstrichen"];
+const NAMEN = {
+  fett: "fett (dicke Buchstaben)",
+  kursiv: "kursiv (schräge Buchstaben)",
+  unterstrichen: "unterstrichen",
+  schrift: "die Schriftart",
+  groesse: "die Schriftgröße",
+  farbe: "die Schriftfarbe",
+};
+
+const klein = (x) => String(x).toLowerCase();
+const ohneEndung = (name) => name.replace(/\.docx$/i, "");
+const zeilenNr = (dok, text) => dok.zeilen.findIndex((z) => !z.bild && z.text === text);
+
+function reihenfolge(aufgaben, runden, gemischt) {
+  const liste = [];
+  while (liste.length < runden) liste.push(...(gemischt === false ? aufgaben : mischen(aufgaben)));
+  return liste.slice(0, runden);
+}
+
+/* Eigenschaften eines Format-Ziels ohne "zeile" */
+const eigenschaften = (f) => Object.keys(f).filter((x) => x !== "zeile");
+
+/* ---------- Ist ein Ziel erreicht? ---------- */
+function erfuellt(ziel, dok, fs) {
+  if (ziel.gespeichert) return dok.gespeichert;
+  if (ziel.format) {
+    const z = dok.zeilen[zeilenNr(dok, ziel.format.zeile)];
+    return Boolean(z) && eigenschaften(ziel.format).every((e) => z[e] === ziel.format[e]);
+  }
+  if (ziel.bild) {
+    const i = dok.zeilen.findIndex((z) => z.bild === ziel.bild.bild);
+    if (i < 0) return false;
+    return !ziel.bild.nach || i === zeilenNr(dok, ziel.bild.nach) + 1;
+  }
+  if (ziel.gespeichertUnter) {
+    const { ort, name } = ziel.gespeichertUnter;
+    return fs.existiert(verbinde(ort, name)) && klein(dok.name) === klein(name) && dok.gespeichert;
+  }
+  return false;
+}
+
+/* ---------- Darf die Aktion wirken? ----------
+   Rückgabe: { ok } oder { ok: false, hinweis } oder
+             { ok: false, hinweis, keinFehler: true } (nur ein freundlicher Tipp) */
+function falscherWert(e, soll) {
+  if (KNOEPFE_AN_AUS.includes(e)) return soll ? `Die Zeile soll ${NAMEN[e].split(" ")[0]} bleiben.` : `Die Zeile soll nicht ${NAMEN[e].split(" ")[0]} sein.`;
+  if (e === "schrift") return `Die Schriftart soll „${soll}“ sein.`;
+  if (e === "groesse") return `Die Schriftgröße soll ${soll} sein.`;
+  if (e === "farbe") return `Die Farbe soll ${FARBEN[soll].name} sein.`;
+  return "Das passt noch nicht.";
+}
+
+function bewerte(aktion, ziel, dok) {
+  const { art } = aktion;
+  if (["minimieren", "maximieren", "wiederherstellen", "schliessen", "taskleiste"].includes(art)) {
+    return { ok: false, hinweis: "Lass das Programm offen – hier arbeiten wir gerade." };
+  }
+  if (art === "oeffnen") return { ok: false, hinweis: "Jetzt brauchst du kein anderes Programm." };
+  if (["zeile-waehlen", "start-auf", "start-zu", "aktivieren"].includes(art)) return { ok: true };
+
+  if (art === "format") {
+    if (aktion.nr === null || aktion.nr === undefined) {
+      return { ok: false, keinFehler: true, hinweis: "Klick zuerst auf die Zeile, die du ändern willst." };
+    }
+    const z = dok.zeilen[aktion.nr];
+    if (z.bild) return { ok: false, keinFehler: true, hinweis: "Das ist ein Bild. Klick auf eine Zeile mit Text." };
+    const f = ziel.format;
+    if (!f) return { ok: false, hinweis: "Jetzt bitte nichts an der Schrift ändern." };
+    if (z.text !== f.zeile) return { ok: false, hinweis: `Das ist die falsche Zeile. Klick zuerst auf „${f.zeile}“.` };
+    const e = aktion.eigenschaft;
+    if (!(e in f)) {
+      const gesucht = eigenschaften(f).find((x) => z[x] !== f[x]) || eigenschaften(f)[0];
+      return { ok: false, hinweis: `Das war ${NAMEN[e]}. Gesucht ist ${NAMEN[gesucht]}.` };
+    }
+    if (f[e] !== aktion.wert) return { ok: false, hinweis: falscherWert(e, f[e]) };
+    return { ok: true };
+  }
+
+  if (art === "bild-einfuegen") {
+    const b = ziel.bild;
+    if (!b) return { ok: false, hinweis: "Jetzt brauchst du kein Bild." };
+    if (aktion.bild !== b.bild) return { ok: false, hinweis: `Gesucht ist das Bild „${BILDER[b.bild].name}“.` };
+    if (b.nach) {
+      const nach = aktion.nach === null || aktion.nach === undefined ? null : dok.zeilen[aktion.nach];
+      if (!nach || nach.text !== b.nach) {
+        return { ok: false, hinweis: `Das Bild soll unter die Zeile „${b.nach}“. Klick zuerst auf diese Zeile.` };
+      }
+    }
+    return { ok: true };
+  }
+
+  if (art === "speichern") {
+    if (!dok.name) return { ok: true }; // öffnet „Speichern unter“
+    if (ziel.gespeichertUnter) {
+      return { ok: false, hinweis: "„Speichern“ speichert nur am alten Platz mit dem alten Namen. Hier brauchst du „Speichern unter“ im Menü „Datei“." };
+    }
+    if (ziel.gespeichert && ziel.nurSymbol && aktion.weg !== "symbol") {
+      return { ok: false, keinFehler: true, hinweis: (aktion.weg === "tasten" ? "Strg+S klappt auch!" : "Das klappt auch!") + " Aber nimm diesmal das Speichern-Symbol – die Diskette." };
+    }
+    return { ok: true };
+  }
+
+  if (art === "speichern-unter") {
+    const g = ziel.gespeichertUnter;
+    if (!g) return { ok: true };
+    if (klein(aktion.ort) !== klein(g.ort)) {
+      return { ok: false, hinweis: `Du bist im Ordner „${ortName(aktion.ort)}“. Das Dokument soll in den Ordner „${ortName(g.ort)}“.` };
+    }
+    if (klein(aktion.name) !== klein(g.name)) return { ok: false, hinweis: `Der Name soll „${ohneEndung(g.name)}“ sein.` };
+    return { ok: true };
+  }
+  return { ok: true };
+}
+
+/* ---------- Hilfe beim Üben: Wo muss ich als Nächstes hin? ---------- */
+function hilfeFuer(ziel, dok, prog) {
+  if (ziel.format) {
+    const f = ziel.format;
+    const nr = zeilenNr(dok, f.zeile);
+    if (prog.auswahl !== nr) return [{ wo: "zeile", nr, text: "Hier klicken" }];
+    const e = eigenschaften(f).find((x) => dok.zeilen[nr][x] !== f[x]);
+    if (!e) return [];
+    if (KNOEPFE_AN_AUS.includes(e)) return [{ wo: "knopf", id: e, text: "Hier klicken" }];
+    if (prog.offen === e) return [{ wo: "option", liste: e, wert: f[e] }];
+    return [{ wo: "knopf", id: e, text: "Hier klicken" }];
+  }
+  if (ziel.bild) {
+    const b = ziel.bild;
+    if (b.nach && prog.auswahl !== zeilenNr(dok, b.nach)) return [{ wo: "zeile", nr: zeilenNr(dok, b.nach), text: "Hier klicken" }];
+    if (prog.offen === "bild") return [{ wo: "option", liste: "bild", wert: b.bild }];
+    return [{ wo: "knopf", id: "bild", text: "Hier klicken" }];
+  }
+  if (ziel.gespeichert) return [{ wo: "knopf", id: "speichern", text: "Hier klicken" }];
+  if (ziel.gespeichertUnter) {
+    const g = ziel.gespeichertUnter;
+    const u = prog.unter;
+    if (!u) {
+      if (prog.offen === "datei") return [{ wo: "option", liste: "datei", wert: "unter" }];
+      return [{ wo: "knopf", id: "datei", text: "Hier klicken" }];
+    }
+    if (klein(u.ort) !== klein(g.ort)) {
+      const tiefer = u.ort === "/" || klein(g.ort).startsWith(klein(u.ort) + "/");
+      if (!tiefer) return [{ wo: "unter-hoch", text: "Hier klicken" }];
+      const naechstes = "/" + teile(g.ort).slice(0, teile(u.ort).length + 1).join("/");
+      return [{ wo: "unter-ordner", pfad: naechstes, text: "Doppelklick" }];
+    }
+    if (klein(u.name.trim().replace(/\.docx$/i, "")) !== klein(ohneEndung(g.name))) {
+      return [{ wo: "unter-name", text: `„${ohneEndung(g.name)}“ tippen` }];
+    }
+    return [{ wo: "unter-speichern", text: "Hier klicken" }];
+  }
+  return [];
+}
+
+/* ---------- Dokument und Dateien für eine Aufgabe ---------- */
+function bereite(start, alt) {
+  if (start.weiter && alt) {
+    for (const e of start.dateien || []) alt.fs.lege(e);
+    return alt;
+  }
+  return { fs: baueDateisystem(start.dateien || []), dok: neuesDokument(start.dokument) };
+}
+
+function mitteInProzent(element, flaeche) {
+  const r = flaeche.getBoundingClientRect();
+  const e = element.getBoundingClientRect();
+  return [((e.left + Math.min(e.width / 2, 60) - r.left) / r.width) * 100, ((e.top + e.height / 2 - r.top) / r.height) * 100];
+}
+
+export const schreiben = {
+
+  starte({ flaeche, tafel, einstellungen, mitHilfe, beiRichtig, beiFehler, beiHinweis, beiFertig, beiAnsage }) {
+    const { runden } = einstellungen;
+    const liste = reihenfolge(einstellungen.aufgaben, runden, einstellungen.gemischt);
+    let runde = 0;
+    let schritte = [];
+    let nr = 0;
+    let platz = null;        // { fs, dok }
+    let prog = null;         // das Textprogramm der aktuellen Aufgabe
+    let gesperrt = false;
+    let timer = null;
+
+    if (mitHilfe) zeigeMaus(tafel, "links", "Linke Taste: einmal klicken.");
+
+    function aktualisiereHilfe() {
+      if (!prog || !mitHilfe) return;
+      prog.setzeHilfe(gesperrt || !schritte[nr] ? [] : hilfeFuer(schritte[nr].ziel, platz.dok, prog));
+    }
+
+    function pruefer(aktion) {
+      if (gesperrt || !schritte[nr]) return false;
+      const urteil = bewerte(aktion, schritte[nr].ziel, platz.dok);
+      if (urteil.hinweis) (urteil.keinFehler ? beiHinweis : beiFehler)(urteil.hinweis);
+      return urteil.ok;
+    }
+
+    function beiAktion() {
+      if (gesperrt) return;
+      if (!erfuellt(schritte[nr].ziel, platz.dok, platz.fs)) {
+        aktualisiereHilfe();
+        return;
+      }
+      nr++;
+      if (nr < schritte.length) {
+        zeigeSchritt();
+        return;
+      }
+      runde++;
+      gesperrt = true;
+      aktualisiereHilfe();
+      beiRichtig(runde, runden);
+      timer = setTimeout(() => {
+        if (runde >= runden) beiFertig();
+        else starteRunde();
+      }, RUNDE_PAUSE_MS);
+    }
+
+    const desk = baueDesktop(flaeche, { pruefer, beiAktion });
+
+    function zeigeSchritt() {
+      beiAnsage(schritte[nr].ansage);
+      aktualisiereHilfe();
+    }
+
+    function starteRunde() {
+      const aufgabe = liste[runde];
+      if (prog) prog.beenden();
+      platz = bereite(aufgabe.start, platz);
+      desk.setze({
+        offen: [{ programm: "schreiben", zustand: "maximiert" }],
+        kontext: {
+          fs: platz.fs,
+          dokument: platz.dok,
+          beiStart: (neu) => { prog = neu; },
+          beiAenderung: () => aktualisiereHilfe(),
+        },
+      });
+      schritte = aufgabe.schritte;
+      nr = 0;
+      gesperrt = false;
+      zeigeSchritt();
+    }
+    starteRunde();
+
+    return {
+      beenden() {
+        clearTimeout(timer);
+        if (prog) prog.beenden();
+        desk.beenden();
+      },
+    };
+  },
+
+  /* Vorführung: Bit erledigt die erste Aufgabe – der Zeiger folgt der Hilfe. */
+  zeigeDemo(flaeche, tafel, einstellungen) {
+    const aufgabe = einstellungen.aufgaben[0];
+    const desk = baueDesktop(flaeche);
+    const buehne = demoBuehne(flaeche);
+    zeigeMaus(tafel, "links", "Linke Taste: einmal klicken.");
+    let prog = null;
+    let platz = null;
+    let timer = [];
+
+    function schritt(nr, zaehler) {
+      const ziel = aufgabe.schritte[nr] && aufgabe.schritte[nr].ziel;
+      if (!ziel || zaehler > 14) {
+        timer.push(setTimeout(durchlauf, 2500));
+        return;
+      }
+      if (erfuellt(ziel, platz.dok, platz.fs)) return schritt(nr + 1, zaehler);
+      const hilfe = hilfeFuer(ziel, platz.dok, prog);
+      const h = hilfe[0];
+      const element = h && prog.elementFuer(h);
+      if (!element) {
+        timer.push(setTimeout(durchlauf, 2500));
+        return;
+      }
+      prog.setzeHilfe(hilfe);
+      buehne.sage("");
+      buehne.bewege(...mitteInProzent(element, flaeche), 1000);
+      timer.push(setTimeout(() => {
+        buehne.sage(h.text === "Doppelklick" ? "Doppelklick!" : h.wo === "unter-name" ? "Tippen" : "Klick!");
+        if (h.wo === "unter-name") {
+          const name = ohneEndung(ziel.gespeichertUnter.name);
+          [...name].forEach((_, i) => timer.push(setTimeout(() => { prog.setzeName(name.slice(0, i + 1)); prog.setzeHilfe(hilfeFuer(ziel, platz.dok, prog)); }, 150 * i)));
+          timer.push(setTimeout(() => schritt(nr, zaehler + 1), 150 * name.length + 500));
+          return;
+        }
+        if (h.text === "Doppelklick") element.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+        else element.click();
+        timer.push(setTimeout(() => schritt(nr, zaehler + 1), 700));
+      }, 1200));
+    }
+
+    function durchlauf() {
+      timer.forEach(clearTimeout);
+      timer = [];
+      if (prog) prog.beenden();
+      platz = bereite(aufgabe.start, null);
+      desk.setze({
+        offen: [{ programm: "schreiben", zustand: "maximiert" }],
+        kontext: { fs: platz.fs, dokument: platz.dok, beiStart: (neu) => { prog = neu; } },
+      });
+      buehne.setze(50, 70);
+      buehne.sage("");
+      timer.push(setTimeout(() => schritt(0, 0), 800));
+    }
+    durchlauf();
+
+    return {
+      beenden() {
+        timer.forEach(clearTimeout);
+        if (prog) prog.beenden();
+        buehne.beenden();
+        desk.beenden();
+      },
+    };
+  },
+};
+
+export { elternVon };

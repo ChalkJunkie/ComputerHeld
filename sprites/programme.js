@@ -189,3 +189,28 @@ export const BILD_HAUS = {
     ".KKKKKKKKKK.",
   ],
 };
+
+// --- Speichern-Symbol: Diskette (12 x 12) -------------------------------
+export const SYMBOL_DISKETTE = {
+  breite: 12, hoehe: 12,
+  palette: {
+    K, W,
+    B: { name: "Blau", farbe: "#3f7fd0" },
+    G: { name: "Etikett", farbe: "#e6e6e6" },
+    L: { name: "Linie", farbe: "#9a9a9a" },
+  },
+  basis: [
+    "KKKKKKKKKKK.",
+    "KBBWWWWWBBKK",
+    "KBBWWWWWBBBK",
+    "KBBWWWWWBBBK",
+    "KBBBBBBBBBBK",
+    "KBBBBBBBBBBK",
+    "KBGGGGGGGGBK",
+    "KBGGGGGGGGBK",
+    "KBGLLLLLLGBK",
+    "KBGGGGGGGGBK",
+    "KBGGGGGGGGBK",
+    "KKKKKKKKKKKK",
+  ],
+};

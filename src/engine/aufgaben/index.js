@@ -9,6 +9,7 @@ import { einsortieren } from "./einsortieren.js";
 import { editor } from "./editor.js";
 import { desktop } from "./desktop.js";
 import { explorer } from "./explorer.js";
+import { schreiben } from "./schreiben.js";
 import { abfolge } from "./abfolge.js";
 
 export const AUFGABENTYPEN = {
@@ -21,5 +22,6 @@ export const AUFGABENTYPEN = {
   editor,         // Textfenster für Tasten und Tastenkürzel (Welt 2)
   desktop,        // Fenster, Taskleiste und Startmenü (Welt 3)
   explorer,       // Dateien und Ordner im Explorer (Welt 4)
+  schreiben,      // Textprogramm: Schrift, Farbe, Bild, Speichern (Welt 5)
   abfolge,        // mehrere Aufgaben hintereinander (Boss)
 };

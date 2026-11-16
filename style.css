@@ -533,3 +533,76 @@ canvas.sprite { image-rendering: pixelated; display: block; flex: none; }
 .ex-info-zeilen { display: grid; grid-template-columns: auto 1fr; gap: 0.2rem 0.6rem; }
 .ex-info-a { font-weight: bold; }
 .desktop-schild.rechts { left: calc(100% + 8px); bottom: auto; top: 50%; transform: translateY(-50%); }
+
+/* =====================================================================
+   TEXTPROGRAMM „SCHREIBEN“ (ab Welt 5)
+   ===================================================================== */
+.fenster[data-programm="schreiben"] .fenster-inhalt { padding: 0; }
+.schreiben { position: relative; display: flex; flex-direction: column; height: 100%; background: #e8e4dc; }
+.sch-leiste {
+  flex: none; display: flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.6rem;
+  background: var(--papier); border-bottom: 3px solid var(--tinte);
+}
+.sch-knopf {
+  position: relative; height: 2.1rem; min-width: 2.3rem; display: flex; align-items: center; justify-content: center; gap: 0.3rem;
+  padding: 0 0.5rem; font: inherit; font-size: 0.95rem; color: var(--tinte); cursor: pointer;
+  background: var(--weiss); border: 3px solid var(--tinte);
+}
+.sch-knopf:hover { background: var(--akzent); }
+.sch-knopf.an { background: #cfe0ff; border-color: #1b4fd8; }
+.sch-datei { background: var(--welt-mittel); font-weight: bold; }
+.sch-liste { min-width: 10rem; justify-content: space-between; }
+.sch-liste.klein { min-width: 4.5rem; }
+.sch-format { width: 2.3rem; font-size: 1.1rem; }
+.sch-farb-a { font-weight: bold; border-bottom: 5px solid; line-height: 1.1; padding: 0 0.15rem; }
+.sch-trenner { width: 3px; align-self: stretch; background: var(--grau); margin: 0 0.2rem; }
+.sch-status { flex: none; display: flex; gap: 1rem; align-items: center; padding: 0.2rem 0.8rem; font-size: 0.9rem; background: var(--papier); border-bottom: 3px solid var(--tinte); }
+.sch-dokname { font-weight: bold; }
+.sch-blatt { flex: 1; min-height: 0; overflow: auto; padding: 0.8rem 0; }
+.sch-seite {
+  width: min(44rem, 92%); min-height: calc(100% - 0.4rem); margin: 0 auto; box-sizing: border-box; padding: 1.2rem 1.6rem;
+  background: var(--weiss); border: 3px solid var(--tinte); box-shadow: 4px 4px 0 var(--grau-text);
+}
+.sch-zeile { position: relative; padding: 0.1rem 0.3rem; border: 3px solid transparent; cursor: text; line-height: 1.3; min-height: 1.2em; }
+.sch-zeile:hover { border-color: #cfe0ff; }
+.sch-zeile.markiert { background: #cfe0ff; border-color: #1b4fd8; }
+.sch-bild { display: flex; justify-content: center; padding: 0.3rem; cursor: default; }
+.desktop-schild.in-zeile { z-index: 5; left: auto; right: 0.4rem; bottom: auto; top: 50%; transform: translateY(-50%); font-family: Verdana, sans-serif; font-style: normal; text-decoration: none; }
+
+.sch-auswahlliste {
+  position: absolute; z-index: 20; display: flex; flex-direction: column; min-width: 10rem; padding: 0.2rem;
+  background: var(--weiss); border: var(--rahmen) solid var(--tinte); box-shadow: 4px 4px 0 var(--tinte);
+}
+.sch-auswahlliste[hidden] { display: none; }
+.sch-auswahlliste.liste-farbe, .sch-auswahlliste.liste-bild { flex-direction: row; flex-wrap: wrap; max-width: 24rem; }
+.sch-option {
+  position: relative; display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0.6rem; text-align: left;
+  font: inherit; font-size: 1rem; color: var(--tinte); background: none; border: 3px solid transparent; cursor: pointer;
+}
+.liste-schrift .sch-option { font-size: 1.05rem; }
+.liste-farbe .sch-option, .liste-bild .sch-option { flex-direction: column; gap: 0.2rem; font-size: 0.8rem; padding: 0.3rem; }
+.sch-option:hover { background: var(--akzent); }
+.sch-option.mit-hilfe { outline: 4px dashed var(--tinte); outline-offset: -4px; background: var(--akzent); }
+.sch-farbmuster { width: 2rem; height: 2rem; border: 3px solid var(--tinte); }
+
+.sch-dialog { position: absolute; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; background: rgba(46, 28, 18, 0.25); }
+.sch-dialog[hidden] { display: none; }
+.sch-dialog-box {
+  width: min(34rem, 90%); display: flex; flex-direction: column; gap: 0.6rem; padding: 0.8rem 1rem;
+  background: var(--papier); border: var(--rahmen) solid var(--tinte); box-shadow: 4px 4px 0 var(--tinte);
+}
+.sch-dialog-titel { font-size: 1.1rem; }
+.sch-unter-ort { display: flex; align-items: center; gap: 0.6rem; font-weight: bold; }
+.sch-unter-liste {
+  display: flex; flex-direction: column; gap: 0.1rem; height: 9rem; overflow: auto; padding: 0.3rem;
+  background: var(--weiss); border: 3px solid var(--tinte);
+}
+.sch-unter-eintrag { position: relative; display: flex; align-items: center; gap: 0.5rem; padding: 0.1rem 0.4rem; border: 3px solid transparent; cursor: default; }
+.sch-unter-eintrag:hover { background: #eef3ff; }
+.sch-unter-eintrag.datei { color: var(--grau-text); }
+.sch-unter-name { position: relative; display: flex; align-items: center; gap: 0.5rem; }
+.sch-eingabe { flex: 1; font: inherit; padding: 0.2rem 0.4rem; border: 3px solid var(--tinte); }
+.sch-unter-typ { color: var(--grau-text); font-size: 0.9rem; }
+.sch-dialog-knoepfe { display: flex; gap: 0.6rem; justify-content: flex-end; }
+.sch-dialog .mit-hilfe { outline: 4px dashed var(--akzent); outline-offset: 2px; }
+.sch-unter-speichern { position: relative; }

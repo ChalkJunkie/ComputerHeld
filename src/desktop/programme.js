@@ -11,9 +11,16 @@
 import {
   SYMBOL_NOTIZEN, SYMBOL_MALEN, SYMBOL_RECHNER, SYMBOL_MUSIK, SYMBOL_FOTOS, BILD_HAUS,
 } from "../../sprites/programme.js";
-import { ORDNER } from "../../sprites/dateien.js";
-import { erzeugeSprite } from "../engine/sprite-render.js";
+import { ORDNER, DATEI } from "../../sprites/dateien.js";
+import { erzeugeSprite, setzePoseZusammen } from "../engine/sprite-render.js";
 import { baueExplorer } from "./explorer.js";
+import { baueSchreiben } from "./schreiben.js";
+
+// Symbol des Textprogramms: das Dokument-Blatt aus sprites/dateien.js
+const SYMBOL_SCHREIBEN = {
+  breite: DATEI.breite, hoehe: DATEI.hoehe, palette: DATEI.palette,
+  basis: setzePoseZusammen(DATEI, "dokument"),
+};
 
 function el(tag, klasse, text) {
   const e = document.createElement(tag);
@@ -99,6 +106,15 @@ export const PROGRAMME = {
     symbol: ORDNER,
     imStartmenue: false,
     inhalt: (kontext) => baueExplorer(kontext),
+  },
+
+
+  // Das Textprogramm bekommt sein Dokument aus den Level-Daten.
+  schreiben: {
+    name: "Schreiben",
+    symbol: SYMBOL_SCHREIBEN,
+    imStartmenue: false,
+    inhalt: (kontext) => baueSchreiben(kontext),
   },
 
 };

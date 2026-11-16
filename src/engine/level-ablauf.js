@@ -178,6 +178,8 @@ export function starteLevel(wurzel, level, optionen) {
       einstellungen,
       mitHilfe,
       beiAnsage: sage, // der Aufgabentyp darf den Auftrag pro Runde neu ansagen
+      // ein freundlicher Hinweis, der NICHT als Fehler zählt
+      beiHinweis: (text) => melde(text),
       beiRichtig(geschafft, gesamt) {
         fehlerInFolge = 0;
         zaehler.textContent = `${geschafft} / ${gesamt}`;
