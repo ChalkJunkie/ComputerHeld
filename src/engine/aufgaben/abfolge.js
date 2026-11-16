@@ -7,6 +7,9 @@
      abschnitte – Liste: { typ, ansage, einstellungen }
                   "ansage" sagt Bit zu Beginn des Abschnitts (darf fehlen,
                   wenn der Aufgabentyp selbst ansagt).
+
+   Die Abschnitte teilen sich ein Notizfeld "gemeinsam". So weiß z. B. das
+   Einsortieren, welche Edelsteine vorher eingesammelt wurden.
    ===================================================================== */
 
 import { AUFGABENTYPEN } from "./index.js";
@@ -21,6 +24,7 @@ export const abfolge = {
 
   starte({ flaeche, tafel, einstellungen, mitHilfe, beiRichtig, beiFehler, beiFertig, beiAnsage }) {
     const gesamt = abfolge.anzahlRunden(einstellungen);
+    const gemeinsam = {};
     let erledigt = 0;   // Runden aus schon fertigen Abschnitten
     let nummer = 0;
     let laufend = null;
@@ -33,6 +37,7 @@ export const abfolge = {
         tafel,
         mitHilfe,
         einstellungen: abschnitt.einstellungen,
+        gemeinsam,
         beiFehler,
         beiAnsage,
         beiRichtig: (geschafft) => beiRichtig(erledigt + geschafft, gesamt),
@@ -56,13 +61,13 @@ export const abfolge = {
 
   /* Vorführung: nur ein ruhiges Bild – die Techniken sind schon bekannt. */
   zeigeDemo(flaeche) {
-    const namen = ["edelstein-gruen", "edelstein-rot", "kiste", "edelstein-blau", "edelstein-gruen"];
+    const namen = ["edelstein-rot", "edelstein-gelb", "kiste-offen", "edelstein-blau", "edelstein-gruen"];
     const teile = namen.map((name, i) => {
       const e = document.createElement("div");
       e.className = "ziel mittig";
       e.style.left = 26 + i * 12 + "%";
       e.style.top = "45%";
-      e.append(bild(name, name === "kiste" ? 8 : 6));
+      e.append(bild(name, name.startsWith("kiste") ? 8 : 6));
       flaeche.append(e);
       return e;
     });

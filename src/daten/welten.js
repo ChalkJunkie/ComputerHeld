@@ -33,7 +33,7 @@ export const WELTEN = [
       { id: "1.5", titel: "Mausrad",        art: "normal" },
       { id: "1.6", titel: "Markieren",      art: "normal" },
       { id: "1.7", titel: "Ziehen und Ablegen", art: "normal" },
-      { id: "1.B", titel: "Boss: Schatzsuche",  art: "boss" },
+      { id: "1.B", titel: "Boss: Schatz verstecken", art: "boss" },
     ],
   },
   {

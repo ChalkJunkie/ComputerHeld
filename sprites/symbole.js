@@ -98,13 +98,16 @@ export const ZEIGER = {
 };
 
 // --- Kiste (16 x 12) in drei Farben ------------------------------------
-// H = helle Kante, B = Fläche, D = dunkle Kante, Y = Schloss
+// H = helle Kante, B = Fläche, D = dunkle Kante, Y = Schloss und Gold,
+// I = Innenseite (nur bei der offenen Kiste zu sehen)
 const KISTE_BRAUN = {
   K: { name: "Umriss",  farbe: "#2e1c12" },
   H: { name: "Hell",    farbe: "#c48c56" },
   B: { name: "Fläche",  farbe: "#9a6338" },
   D: { name: "Dunkel",  farbe: "#6e4424" },
   Y: { name: "Schloss", farbe: "#f5c12e" },
+  I: { name: "Innen",   farbe: "#4a2c16" },
+  G: { name: "Glitzer", farbe: "#fff6c2" },
 };
 export const KISTE = {
   breite: 16,
@@ -112,14 +115,42 @@ export const KISTE = {
   palette: KISTE_BRAUN,
   paletten: {
     braun: KISTE_BRAUN,
-    rot:  { ...KISTE_BRAUN, H: { name: "Hell", farbe: "#f08a7a" }, B: { name: "Fläche", farbe: "#d6402b" }, D: { name: "Dunkel", farbe: "#8f2415" } },
-    blau: { ...KISTE_BRAUN, H: { name: "Hell", farbe: "#8fc0f0" }, B: { name: "Fläche", farbe: "#3f7fd0" }, D: { name: "Dunkel", farbe: "#234a8a" } },
+    rot:  { ...KISTE_BRAUN, H: { name: "Hell", farbe: "#f08a7a" }, B: { name: "Fläche", farbe: "#d6402b" }, D: { name: "Dunkel", farbe: "#8f2415" }, I: { name: "Innen", farbe: "#5c1a10" } },
+    blau: { ...KISTE_BRAUN, H: { name: "Hell", farbe: "#8fc0f0" }, B: { name: "Fläche", farbe: "#3f7fd0" }, D: { name: "Dunkel", farbe: "#234a8a" }, I: { name: "Innen", farbe: "#16305c" } },
   },
   basis: [
     "..KKKKKKKKKKKK..",
     ".KHHHHHHHHHHHHK.",
     "KHBBBBBBBBBBBBHK",
     "KHBBBBBBBBBBBBHK",
+    "KKKKKKKKKKKKKKKK",
+    "KBBBBBBYYBBBBBBK",
+    "KBBBBBBYYBBBBBBK",
+    "KDBBBBBBBBBBBBDK",
+    "KDBBBBBBBBBBBBDK",
+    "KDBBBBBBBBBBBBDK",
+    "KDDDDDDDDDDDDDDK",
+    "KKKKKKKKKKKKKKKK",
+  ],
+};
+
+// --- Offene Kiste (16 x 15) – gleiche Farben wie die geschlossene -----
+// Oben der nach hinten geklappte Deckel (schmaler, man sieht seine dunkle
+// Innenseite), darunter ein Goldhaufen. Die unteren 8 Zeilen sind genau
+// dieselben wie bei der geschlossenen Kiste. G = Glitzer im Gold.
+export const KISTE_OFFEN = {
+  breite: 16,
+  hoehe: 15,
+  palette: KISTE_BRAUN,
+  paletten: KISTE.paletten,
+  basis: [
+    "...KKKKKKKKKK...",
+    "..KHDDDDDDDDHK..",
+    "..KIIIIIIIIIIK..",
+    ".KKKKKKKKKKKKKK.",
+    ".KIIIKYYYYKIIIK.",
+    "KIIKYYYGYYYYKIIK",
+    "KIKYYGYYYYYGYKIK",
     "KKKKKKKKKKKKKKKK",
     "KBBBBBBYYBBBBBBK",
     "KBBBBBBYYBBBBBBK",
@@ -146,6 +177,8 @@ export const EDELSTEIN = {
     rot:   EDELSTEIN_ROT,
     blau:  { ...EDELSTEIN_ROT, H: { name: "Hell", farbe: "#b9dcff" }, B: { name: "Fläche", farbe: "#3f8ae0" }, D: { name: "Dunkel", farbe: "#1f4f96" } },
     gruen: { ...EDELSTEIN_ROT, H: { name: "Hell", farbe: "#c4f5b0" }, B: { name: "Fläche", farbe: "#3fae3a" }, D: { name: "Dunkel", farbe: "#1f6b22" } },
+    gelb:  { ...EDELSTEIN_ROT, H: { name: "Hell", farbe: "#fff2a8" }, B: { name: "Fläche", farbe: "#f0c419" }, D: { name: "Dunkel", farbe: "#a07a00" } },
+    lila:  { ...EDELSTEIN_ROT, H: { name: "Hell", farbe: "#e6c4ff" }, B: { name: "Fläche", farbe: "#9b4fd6" }, D: { name: "Dunkel", farbe: "#5c2390" } },
   },
   basis: [
     "...KKKKKK...",
@@ -220,5 +253,67 @@ export const MAUSGERAET = {
     ".KBBBBBBBBBK",
     "..KBBBBBBBK.",
     "...KKKKKKK..",
+  ],
+};
+
+// --- Kette (für den Boss: Schatzkiste sichern) -------------------------
+// Ein Kettenglied ist 8 x 6 Pixel groß. Die Funktion kette() reiht so
+// viele Glieder aneinander wie nötig. Das letzte Glied ist geschlossen
+// (KETTEN_ENDE), damit die Kette nicht „abgeschnitten“ aussieht.
+const KETTEN_PALETTE = {
+  K: { name: "Umriss", farbe: "#2e1c12" },
+  H: { name: "Hell",   farbe: "#d8d8d8" },
+  D: { name: "Dunkel", farbe: "#7a7a7a" },
+};
+const KETTEN_GLIED = [
+  ".KKKK...",
+  "KHHHHKKK",
+  "KH..HHHH",
+  "KD..DDDD",
+  "KDDDDKKK",
+  ".KKKK...",
+];
+const KETTEN_ENDE = [
+  ".KKKK.",
+  "KHHHHK",
+  "KH..HK",
+  "KD..DK",
+  "KDDDDK",
+  ".KKKK.",
+];
+/* glieder = Anzahl der Glieder, senkrecht = true dreht die Kette hochkant */
+export function kette(glieder, senkrecht = false) {
+  let zeilen = KETTEN_GLIED.map((z, i) => z.repeat(glieder - 1) + KETTEN_ENDE[i]);
+  if (senkrecht) {
+    // Zeilen und Spalten tauschen
+    zeilen = [...zeilen[0]].map((_, x) => zeilen.map((z) => z[x]).join(""));
+  }
+  return { breite: zeilen[0].length, hoehe: zeilen.length, palette: KETTEN_PALETTE, basis: zeilen };
+}
+
+// --- Vorhängeschloss (12 x 13) ----------------------------------------
+export const SCHLOSS = {
+  breite: 12,
+  hoehe: 13,
+  palette: {
+    K: { name: "Umriss", farbe: "#2e1c12" },
+    G: { name: "Bügel",  farbe: "#9a9a9a" },
+    Y: { name: "Gold",   farbe: "#f5c12e" },
+    D: { name: "Dunkel", farbe: "#a07a00" },
+  },
+  basis: [
+    "...KKKKKK...",
+    "..KGGGGGGK..",
+    "..KGK..KGK..",
+    "..KGK..KGK..",
+    "..KGK..KGK..",
+    "KKKKKKKKKKKK",
+    "KYYYYYYYYYYK",
+    "KYYYYKKYYYYK",
+    "KYYYYKKYYYYK",
+    "KYYYYYKYYYYK",
+    "KYYYYYKYYYYK",
+    "KDDDDDDDDDDK",
+    "KKKKKKKKKKKK",
   ],
 };

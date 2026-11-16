@@ -44,7 +44,8 @@ export const LEVEL_WELT1 = {
     aufgabe: "Bewege den Pfeil auf die Zielscheibe. Halte ihn dort kurz still.",
     typ: "zielscheiben",
     gefuehrt: { runden: 3, groesse: 8, ausloeser: "zeigen", haltezeit: 700 },
-    selbst:   { runden: 8, groesse: 5, ausloeser: "zeigen", haltezeit: 700 },
+    // groessen: Die Zielscheiben werden nach und nach kleiner (je 2 Runden pro Größe)
+    selbst:   { runden: 8, groessen: [5, 4, 3, 2], ausloeser: "zeigen", haltezeit: 700 },
     hilfen: [
       "Du musst nicht klicken. Nur zeigen und kurz warten.",
       "Ist der Tisch zu Ende? Heb die Maus hoch und setz sie weiter vorne wieder ab.",
@@ -62,7 +63,8 @@ export const LEVEL_WELT1 = {
     aufgabe: "Klick mit der linken Taste auf die Zielscheibe.",
     typ: "zielscheiben",
     gefuehrt: { runden: 3, groesse: 7, ausloeser: "klick" },
-    selbst:   { runden: 10, groesse: 4, ausloeser: "klick" },
+    // Kleiner als Größe 2 (32 Bildschirmpunkte) wird es nicht – sonst zu fummelig
+    selbst:   { runden: 9, groessen: [4, 3, 2], ausloeser: "klick" },
     hilfen: [
       "Halte die Maus beim Klicken ganz ruhig. Nur der Finger bewegt sich.",
       "Drück kurz und lass gleich wieder los.",
@@ -105,8 +107,9 @@ export const LEVEL_WELT1 = {
     ],
     aufgabe: "Öffne die Kiste mit einem Doppelklick.",
     typ: "zielscheiben",
-    gefuehrt: { runden: 3, groesse: 7, bild: "kiste", ausloeser: "doppelklick" },
-    selbst:   { runden: 8, groesse: 5, bild: "kiste", ausloeser: "doppelklick" },
+    // bildDanach: Nach dem Doppelklick ist kurz die offene Kiste zu sehen
+    gefuehrt: { runden: 3, groesse: 7, bild: "kiste", bildDanach: "kiste-offen", ausloeser: "doppelklick" },
+    selbst:   { runden: 8, groessen: [5, 4, 3, 3], bild: "kiste", bildDanach: "kiste-offen", ausloeser: "doppelklick" },
     hilfen: [
       "Die beiden Klicks müssen schnell kommen. Klick-klick, wie zweimal Anklopfen.",
       "Halte die Maus dabei still. Sie darf zwischen den Klicks nicht wegrutschen.",
@@ -141,8 +144,14 @@ export const LEVEL_WELT1 = {
     ],
     aufgabe: "Zieh einen Rahmen um alle Edelsteine. Die grauen Steine bleiben draußen.",
     typ: "markieren",
-    gefuehrt: { runden: 2, edelsteine: 3, steine: 3 },
-    selbst:   { runden: 5, edelsteine: 5, steine: 6 },
+    // Jede Runde hat eine eigene Farbe und eine andere Anzahl Edelsteine
+    gefuehrt: { runden: 2, farben: ["blau", "gelb"], anzahlen: [3, 4], steine: 3 },
+    selbst: {
+      runden: 5,
+      farben: ["rot", "blau", "gruen", "gelb", "lila"],
+      anzahlen: [2, 3, 4, 5, 6],
+      steine: 6,
+    },
     hilfen: [
       "Fang neben den Edelsteinen an, nicht auf einem Edelstein.",
       "Starte links oben und zieh nach rechts unten. Lass die Taste erst am Ende los.",
@@ -169,13 +178,13 @@ export const LEVEL_WELT1 = {
   },
 
   "1.B": {
-    titel: "Boss: Schatzsuche",
+    titel: "Boss: Schatz verstecken",
     lernziel: "Du nutzt Klick, Ziehen und Rechtsklick nacheinander.",
     erklaerung: [
       "Jetzt zeigst du alles, was du im Mausland gelernt hast!",
-      "Sammle die Edelsteine ein, sortiere sie in die Kisten und aktiviere am Ende die Schatzkiste.",
+      "Sammle Edelsteine ein, leg sie in die Schatzkiste und sichere die Kiste mit Ketten. Dann kann niemand den Schatz klauen.",
     ],
-    aufgabe: "Auf zur Schatzsuche!",
+    aufgabe: "Auf geht's!",
     typ: "abfolge",
     // Kein "gefuehrt": Beim Boss gibt es kein Üben mit Hilfe.
     selbst: {
@@ -183,27 +192,33 @@ export const LEVEL_WELT1 = {
         {
           typ: "zielscheiben",
           ansage: "Sammle die Edelsteine ein. Klick sie an!",
-          einstellungen: { runden: 6, groesse: 5, bild: "edelstein-gruen", ausloeser: "klick" },
+          einstellungen: {
+            runden: 6, groesse: 5, ausloeser: "klick",
+            bilder: ["edelstein-rot", "edelstein-blau", "edelstein-gruen", "edelstein-gelb"],
+          },
         },
         {
-          typ: "ziehen", // sagt selbst an, was wohin gehört
-          einstellungen: { runden: 6, dinge: ROT_UND_BLAU, behaelter: ZWEI_KISTEN },
+          // nimmt genau die eingesammelten Edelsteine – darum gleich viele Runden
+          typ: "einsortieren",
+          einstellungen: { runden: 6 },
         },
         {
           typ: "kontextmenue", // sagt selbst an
           einstellungen: {
-            runden: 3, bild: "kiste", groesse: 6, dingName: "die Schatzkiste",
-            eintraege: ["Öffnen", "Aktivieren", "Umbenennen", "Eigenschaften"],
-            gesucht: ["Aktivieren"],
+            runden: 3, bild: "kiste", groesse: 12, dingName: "die Schatzkiste",
+            festeStelle: true, ketten: true,
+            eintraege: ["Öffnen", "Kiste sichern", "Umbenennen", "Eigenschaften"],
+            gesucht: ["Kiste sichern"],
           },
         },
       ],
     },
     hilfen: [
       "Lies genau, was ich sage. Dort steht immer, was als Nächstes dran ist.",
+      "Jeder Edelstein passt nur auf ein Feld in seiner Farbe.",
       "Menü öffnen: rechte Taste. Alles andere: linke Taste.",
     ],
-    sterne: { fehlerFuerZwei: 5, fehlerFuerDrei: 2, sekundenFuerDrei: 90 },
+    sterne: { fehlerFuerZwei: 5, fehlerFuerDrei: 2, sekundenFuerDrei: 100 },
   },
 
 };

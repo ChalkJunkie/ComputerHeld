@@ -5,6 +5,7 @@ import { kontextmenue } from "./kontextmenue.js";
 import { scrollen } from "./scrollen.js";
 import { markieren } from "./markieren.js";
 import { ziehen } from "./ziehen.js";
+import { einsortieren } from "./einsortieren.js";
 import { abfolge } from "./abfolge.js";
 
 export const AUFGABENTYPEN = {
@@ -13,5 +14,6 @@ export const AUFGABENTYPEN = {
   scrollen,       // Mausrad
   markieren,      // Rahmen aufziehen
   ziehen,         // Ziehen und Ablegen
+  einsortieren,   // Edelsteine auf farbige Fächer ziehen (Boss)
   abfolge,        // mehrere Aufgaben hintereinander (Boss)
 };

@@ -4,11 +4,16 @@
    klickt es an oder doppelklickt es – dann kommt das nächste.
 
    Einstellungen (aus den Level-Daten):
-     runden     – wie viele Dinge
-     groesse    – Vergrößerung des Bildes
-     bild       – welches Bild (Standard "zielscheibe", siehe hilfsmittel.js)
-     ausloeser  – "zeigen" (draufzeigen und warten), "klick" oder "doppelklick"
-     haltezeit  – nur bei "zeigen": Millisekunden, die der Zeiger bleiben muss
+     runden      – wie viele Dinge
+     groesse     – Vergrößerung des Bildes (immer gleich groß) ODER
+     groessen    – Liste von Größen, z. B. [5, 4, 3, 2]: Die Runden werden
+                   gleichmäßig aufgeteilt, die Dinge werden nach und nach kleiner
+     bild        – welches Bild (Standard "zielscheibe", siehe hilfsmittel.js) ODER
+     bilder      – Liste von Bildern, pro Runde wird zufällig eins gewählt
+     bildDanach  – Bild, das nach dem Treffer kurz zu sehen ist
+                   (z. B. "kiste-offen" – die Kiste geht auf)
+     ausloeser   – "zeigen" (draufzeigen und warten), "klick" oder "doppelklick"
+     haltezeit   – nur bei "zeigen": Millisekunden, die der Zeiger bleiben muss
 
    Jeder Aufgabentyp hat dieselben zwei Funktionen:
      starte(...)    – baut die Aufgabe in die Spielfläche
@@ -16,13 +21,15 @@
    Beide geben ein Objekt mit beenden() zurück, das alles wieder aufräumt.
    ===================================================================== */
 
-import { bild, zufallsPlatz, zeigeMaus, schild, demoBuehne } from "./hilfsmittel.js";
+import { bild, zufall, zufallsPlatz, zeigeMaus, schild, demoBuehne, tauscheBild } from "./hilfsmittel.js";
 
 /* Wer kürzer als so viele Millisekunden über das Ziel huscht, hat nur
    „gestreift“ – das zählt nicht als Fehler. */
 const STREIFEN_MS = 200;
 /* So lange wird nach einem einzelnen Klick auf den zweiten Klick gewartet. */
 const DOPPELKLICK_WARTEN_MS = 600;
+/* So lange bleibt "bildDanach" (z. B. die offene Kiste) zu sehen. */
+const BILD_DANACH_MS = 650;
 
 /* Texte der Hilfe je Auslöser: [Schild am Ziel, Teil der Maus, Text zur Maus] */
 const HILFE = {
@@ -31,11 +38,11 @@ const HILFE = {
   doppelklick: ["Zweimal schnell!", "links", "Linke Taste: zweimal schnell drücken."],
 };
 
-function baueZiel(einstellungen) {
+function baueZiel(name, groesse, ausloeser) {
   const ziel = document.createElement("div");
   ziel.className = "ziel";
-  ziel.append(bild(einstellungen.bild || "zielscheibe", einstellungen.groesse));
-  if (einstellungen.ausloeser === "zeigen") {
+  ziel.append(bild(name, groesse));
+  if (ausloeser === "zeigen") {
     const balken = document.createElement("div");
     balken.className = "haltebalken";
     balken.innerHTML = "<div></div>";
@@ -46,10 +53,12 @@ function baueZiel(einstellungen) {
 
 export const zielscheiben = {
 
-  starte({ flaeche, tafel, einstellungen, mitHilfe, beiRichtig, beiFehler, beiFertig }) {
-    const { runden, ausloeser, haltezeit = 700 } = einstellungen;
+  starte({ flaeche, tafel, einstellungen, mitHilfe, beiRichtig, beiFehler, beiFertig, gemeinsam }) {
+    const { runden, ausloeser, haltezeit = 700, bildDanach } = einstellungen;
     let runde = 0;
     let ziel = null;
+    let zielBild = "";
+    let zielGroesse = 0;
     let letzteStelle = null;
     let timer = null;
     let betretenUm = 0;
@@ -57,9 +66,22 @@ export const zielscheiben = {
 
     if (mitHilfe) zeigeMaus(tafel, HILFE[ausloeser][1], HILFE[ausloeser][2]);
 
+    // Größe für die aktuelle Runde: Bei einer Liste wird es nach und nach kleiner
+    function groesseJetzt() {
+      const liste = einstellungen.groessen;
+      if (!liste) return einstellungen.groesse;
+      return liste[Math.min(liste.length - 1, Math.floor((runde * liste.length) / runden))];
+    }
+    function bildJetzt() {
+      if (einstellungen.bilder) return zufall(einstellungen.bilder);
+      return einstellungen.bild || "zielscheibe";
+    }
+
     function naechstesZiel() {
       if (beendet) return;
-      ziel = baueZiel(einstellungen);
+      zielBild = bildJetzt();
+      zielGroesse = groesseJetzt();
+      ziel = baueZiel(zielBild, zielGroesse, ausloeser);
       const canvas = ziel.querySelector("canvas");
       const stelle = zufallsPlatz(flaeche, canvas.width, canvas.height + 20, {
         oben: mitHilfe ? 64 : 24, // Platz für das Schild
@@ -113,14 +135,28 @@ export const zielscheiben = {
 
     function getroffen() {
       timer = null;
-      ziel.remove();
+      // Im Boss merkt sich die Abfolge, welche Dinge eingesammelt wurden
+      if (gemeinsam) (gemeinsam.gesammelt ||= []).push(zielBild);
       runde++;
       beiRichtig(runde, runden);
-      if (runde >= runden) {
-        beendet = true;
-        beiFertig();
+
+      const weiter = () => {
+        ziel.remove();
+        if (runde >= runden) {
+          beendet = true;
+          beiFertig();
+        } else {
+          naechstesZiel();
+        }
+      };
+      if (bildDanach) {
+        // z. B. die Kiste geht kurz auf, dann kommt die nächste
+        ziel.classList.add("erledigt");
+        ziel.querySelector(".ziel-schild")?.remove();
+        tauscheBild(ziel, bild(bildDanach, zielGroesse));
+        timer = setTimeout(weiter, BILD_DANACH_MS);
       } else {
-        naechstesZiel();
+        weiter();
       }
     }
 
@@ -146,7 +182,8 @@ export const zielscheiben = {
      was dort zu tun ist. */
   zeigeDemo(flaeche, tafel, einstellungen) {
     const ausloeser = einstellungen.ausloeser;
-    const ziel = baueZiel({ ...einstellungen, groesse: 6 });
+    const name = einstellungen.bild || (einstellungen.bilder && einstellungen.bilder[0]) || "zielscheibe";
+    const ziel = baueZiel(name, 6, ausloeser);
     ziel.classList.add("mittig");
     ziel.style.left = "60%";
     ziel.style.top = "45%";
@@ -160,6 +197,7 @@ export const zielscheiben = {
         buehne.setze(20, 75);
         buehne.sage("");
         ziel.style.visibility = "visible";
+        tauscheBild(ziel, bild(name, 6)); // wieder das Ausgangsbild
         if (balken) { balken.style.transition = "none"; balken.style.width = "0"; }
       }],
       [400, () => buehne.bewege(60, 45, 1800)],
@@ -171,8 +209,11 @@ export const zielscheiben = {
           buehne.sage("Klick!");
         }
       }],
-      [2800, () => { if (ausloeser === "doppelklick") buehne.sage("Klick! Klick!"); }],
-      [3500, () => { ziel.style.visibility = "hidden"; }],
+      [2800, () => {
+        if (ausloeser === "doppelklick") buehne.sage("Klick! Klick!");
+        if (einstellungen.bildDanach) tauscheBild(ziel, bild(einstellungen.bildDanach, 6));
+      }],
+      [3800, () => { ziel.style.visibility = "hidden"; }],
     ]);
 
     return {

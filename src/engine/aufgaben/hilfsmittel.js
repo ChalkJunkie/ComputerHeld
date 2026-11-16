@@ -7,7 +7,7 @@
    ===================================================================== */
 
 import {
-  ZIELSCHEIBE, KISTE, EDELSTEIN, STEIN, ZEIGER, MAUSGERAET,
+  ZIELSCHEIBE, KISTE, KISTE_OFFEN, EDELSTEIN, STEIN, ZEIGER, MAUSGERAET,
 } from "../../../sprites/symbole.js";
 import { erzeugeSprite } from "../sprite-render.js";
 
@@ -18,9 +18,14 @@ const BILDER = {
   "kiste":           [KISTE, "braun"],
   "kiste-rot":       [KISTE, "rot"],
   "kiste-blau":      [KISTE, "blau"],
+  "kiste-offen":      [KISTE_OFFEN, "braun"],
+  "kiste-rot-offen":  [KISTE_OFFEN, "rot"],
+  "kiste-blau-offen": [KISTE_OFFEN, "blau"],
   "edelstein-rot":   [EDELSTEIN, "rot"],
   "edelstein-blau":  [EDELSTEIN, "blau"],
   "edelstein-gruen": [EDELSTEIN, "gruen"],
+  "edelstein-gelb":  [EDELSTEIN, "gelb"],
+  "edelstein-lila":  [EDELSTEIN, "lila"],
   "stein":           [STEIN],
 };
 
@@ -29,6 +34,27 @@ export function bild(name, faktor) {
   if (!eintrag) throw new Error("Unbekanntes Bild: " + name);
   const [sprite, palette] = eintrag;
   return erzeugeSprite(sprite, { faktor, palette: palette ? sprite.paletten[palette] : sprite.palette });
+}
+
+/* Tauscht das Bild eines Dings aus (z. B. geschlossene gegen offene Kiste).
+   Die Unterkante bleibt an derselben Stelle, damit die Kiste nicht hüpft. */
+export function tauscheBild(element, neuesBild) {
+  const altesBild = element.querySelector("canvas");
+  if (!element.classList.contains("mittig")) {
+    const unterschied = neuesBild.height - altesBild.height;
+    element.style.top = parseFloat(element.style.top) - unterschied + "px";
+  }
+  altesBild.replaceWith(neuesBild);
+}
+
+/* Mischt eine Liste (gibt eine neue, gemischte Liste zurück) */
+export function mischen(liste) {
+  const neu = [...liste];
+  for (let i = neu.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [neu[i], neu[j]] = [neu[j], neu[i]];
+  }
+  return neu;
 }
 
 export function zufall(liste) {

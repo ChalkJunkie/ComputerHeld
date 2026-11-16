@@ -5,28 +5,26 @@
    Richtig ist es, wenn alle Edelsteine im Rahmen liegen und kein Stein.
 
    Einstellungen (aus den Level-Daten):
-     runden      – wie viele Durchgänge
-     edelsteine  – wie viele Edelsteine (höchstens 6)
-     steine      – wie viele Steine drumherum
+     runden    – wie viele Durchgänge
+     farben    – Farben der Edelsteine, z. B. ["rot", "blau", "gelb"].
+                 Jede Runde bekommt ihre eigene Farbe (zufällige Reihenfolge).
+     anzahlen  – wie viele Edelsteine, z. B. [2, 3, 4, 5, 6] (höchstens 6).
+                 Jede Runde bekommt eine andere Anzahl (zufällige Reihenfolge).
+     steine    – wie viele graue Steine drumherum
    ===================================================================== */
 
-import { bild, zeigeMaus, demoBuehne } from "./hilfsmittel.js";
+import { bild, mischen, zeigeMaus, demoBuehne } from "./hilfsmittel.js";
 
 const FELD = 96;      // Die Fläche wird in Felder dieser Größe eingeteilt
 const BILD_FAKTOR = 5;
 
-function mischen(liste) {
-  for (let i = liste.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [liste[i], liste[j]] = [liste[j], liste[i]];
-  }
-  return liste;
-}
-
 export const markieren = {
 
   starte({ flaeche, tafel, einstellungen, mitHilfe, beiRichtig, beiFehler, beiFertig }) {
-    const { runden, edelsteine, steine } = einstellungen;
+    const { runden, steine } = einstellungen;
+    // Farben und Anzahlen einmal mischen; Runde 1 nimmt den ersten Eintrag usw.
+    const farben = mischen(einstellungen.farben);
+    const anzahlen = mischen(einstellungen.anzahlen);
     let runde = 0;
     let dinge = [];        // alle Edelsteine und Steine dieser Runde
     let hilfsrahmen = null;
@@ -77,7 +75,9 @@ export const markieren = {
         element.style.top = oben + y * FELD + (FELD - element.offsetHeight) / 2 + "px";
         dinge.push({ element, istEdelstein });
       }
-      mischen(blockFelder).slice(0, edelsteine).forEach((feld) => lege("edelstein-gruen", feld, true));
+      const farbe = farben[runde % farben.length];
+      const anzahl = anzahlen[runde % anzahlen.length];
+      mischen(blockFelder).slice(0, anzahl).forEach((feld) => lege("edelstein-" + farbe, feld, true));
       mischen(aussenFelder).slice(0, steine).forEach((feld) => lege("stein", feld, false));
 
       if (mitHilfe) {
