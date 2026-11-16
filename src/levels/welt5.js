@@ -23,9 +23,15 @@ const STECKBRIEF = ["Mein Haustier", "Name: Flocke", "Tierart: Kaninchen", "Lieb
 // Ein Dokument mit Namen, das noch nicht gespeichert ist
 const dok = (name, zeilen) => ({ name, ort: "/Dokumente", gespeichert: false, zeilen });
 
-const speichere = (name, zeilen, ansage) => ({
+// weg: "symbol" (Diskette) oder "tasten" (Strg+S)
+const speichere = (name, zeilen, weg, ansage) => ({
   start: { dokument: dok(name, zeilen) },
-  schritte: [{ ziel: { gespeichert: true, nurSymbol: true }, ansage }],
+  schritte: [{ ziel: { gespeichert: true, weg }, ansage }],
+});
+// Ein neues Dokument zum ersten Mal speichern: Dann fragt der Computer nach dem Namen
+const ersteMal = (zeilen, name, ansage) => ({
+  start: { dokument: { zeilen } },
+  schritte: [{ ziel: { gespeichertUnter: { ort: "/Dokumente", name, ersteSpeicherung: true } }, ansage }],
 });
 // format: { zeile: "…", fett: true, … }
 const gestalte = (name, zeilen, format, ansage) => ({
@@ -45,36 +51,39 @@ const speichereUnter = (dokument, ort, name, ansage) => ({
 export const LEVEL_WELT5 = {
 
   "5.1": {
-    titel: "Speichern-Symbol",
-    lernziel: "Du speicherst mit dem Speichern-Symbol.",
+    titel: "Speichern",
+    lernziel: "Du speicherst mit dem Speichern-Symbol und mit Strg+S – und gibst neuen Dokumenten einen Namen.",
     erklaerung: [
-      "In fast jedem Programm gibt es oben ein Speichern-Symbol. Es sieht aus wie eine Diskette – so hat man früher gespeichert.",
-      "Ein Klick darauf, und deine Arbeit ist sicher. Oben siehst du dann „gespeichert ✓“.",
+      "Speichern geht auf zwei Arten: mit dem Speichern-Symbol oben (es sieht aus wie eine Diskette) oder schnell mit Strg+S.",
+      "Speicherst du ein neues Dokument zum ersten Mal, fragt der Computer: Wohin und unter welchem Namen? Dann tippst du einen Namen und klickst auf „Speichern“.",
     ],
     aufgabe: "Speichere das Dokument.",
     typ: "schreiben",
-    gefuehrt: { runden: 2, gemischt: false, aufgaben: [
-      speichere("Einladung.docx", EINLADUNG, "Die Einladung ist fertig. Speichere sie mit dem Speichern-Symbol."),
-      speichere("Brief.docx", BRIEF, "Speichere den Brief."),
+    gefuehrt: { runden: 3, gemischt: false, aufgaben: [
+      speichere("Einladung.docx", EINLADUNG, "symbol", "Die Einladung ist fertig. Speichere sie mit dem Speichern-Symbol."),
+      speichere("Brief.docx", BRIEF, "tasten", "Speichere den Brief jetzt mit der Tastatur: Strg+S."),
+      ersteMal(STECKBRIEF, "Steckbrief.docx", "Dieses Dokument ist ganz neu. Speichere es – der Computer fragt dann nach einem Namen. Nenn es „Steckbrief“."),
     ] },
-    selbst: { runden: 4, aufgaben: [
-      speichere("Plakat.docx", PLAKAT, "Das Plakat ist noch nicht gespeichert. Speichere es."),
-      speichere("Steckbrief.docx", STECKBRIEF, "Speichere den Steckbrief."),
-      speichere("Einladung.docx", EINLADUNG, "Speichere die Einladung."),
-      speichere("Brief.docx", BRIEF, "Speichere den Brief, bevor du aufhörst."),
+    selbst: { runden: 6, aufgaben: [
+      speichere("Plakat.docx", PLAKAT, "symbol", "Speichere das Plakat mit dem Speichern-Symbol."),
+      speichere("Steckbrief.docx", STECKBRIEF, "tasten", "Speichere den Steckbrief mit der Tastenkombination."),
+      ersteMal(PLAKAT, "Flohmarkt.docx", "Das Plakat ist neu. Speichere es und nenn es „Flohmarkt“."),
+      speichere("Brief.docx", BRIEF, "symbol", "Speichere den Brief mit dem Symbol, bevor du aufhörst."),
+      speichere("Einladung.docx", EINLADUNG, "tasten", "Schnell speichern – mit der Tastatur!"),
+      ersteMal(EINLADUNG, "Party.docx", "Die Einladung ist neu. Speichere sie und nenn sie „Party“."),
     ] },
     hilfen: [
-      "Das Speichern-Symbol ist oben links, gleich neben „Datei“.",
-      "Es sieht aus wie ein kleines blaues Viereck mit weißem Fenster: eine Diskette.",
+      "Das Speichern-Symbol ist oben links neben „Datei“. Die Tastenkombination ist Strg+S – S wie „speichern“.",
+      "Beim ersten Speichern: Namen ins Feld „Dateiname“ tippen, dann auf „Speichern“ klicken.",
     ],
-    sterne: { fehlerFuerZwei: 2, fehlerFuerDrei: 0, sekundenFuerDrei: 30 },
+    sterne: { fehlerFuerZwei: 2, fehlerFuerDrei: 0, sekundenFuerDrei: 60 },
   },
 
   "5.2": {
     titel: "Schriftart und -größe",
     lernziel: "Du änderst die Schriftart und die Schriftgröße.",
     erklaerung: [
-      "Klick zuerst auf die Zeile, die du ändern willst. Sie wird blau markiert.",
+      "Markier zuerst die Zeile, die du ändern willst: Maustaste drücken, festhalten und über die ganze Zeile ziehen – wie in Welt 1.",
       "Dann wählst du oben die Schriftart (zum Beispiel „Georgia“) und die Schriftgröße (je größer die Zahl, desto größer die Schrift).",
     ],
     aufgabe: "Mach, was ich sage.",
@@ -93,7 +102,7 @@ export const LEVEL_WELT5 = {
       gestalte("Plakat.docx", PLAKAT, { zeile: "Alle sind eingeladen!", groesse: 12 }, "Mach „Alle sind eingeladen!“ klein: Größe 12."),
     ] },
     hilfen: [
-      "Erst die Zeile anklicken, dann oben in der Leiste die Liste öffnen.",
+      "Erst die ganze Zeile markieren (drücken, ziehen, loslassen), dann oben in der Leiste die Liste öffnen.",
       "Die erste Liste ist die Schriftart, die zweite (mit der Zahl) ist die Schriftgröße.",
     ],
     sterne: { fehlerFuerZwei: 3, fehlerFuerDrei: 1, sekundenFuerDrei: 50 },
@@ -104,7 +113,7 @@ export const LEVEL_WELT5 = {
     lernziel: "Du färbst Text in einer anderen Farbe.",
     erklaerung: [
       "Farbe macht Plakate und Einladungen schöner.",
-      "Klick auf die Zeile. Dann oben auf das „A“ mit dem Farbstrich – und wähl eine Farbe.",
+      "Markier die ganze Zeile. Dann oben auf das „A“ mit dem Farbstrich – und wähl eine Farbe.",
     ],
     aufgabe: "Mach, was ich sage.",
     typ: "schreiben",
@@ -120,7 +129,7 @@ export const LEVEL_WELT5 = {
       gestalte("Steckbrief.docx", STECKBRIEF, { zeile: "Tierart: Kaninchen", farbe: "blau" }, "Färbe „Tierart: Kaninchen“ blau."),
     ] },
     hilfen: [
-      "Der Farbknopf ist das „A“ mit dem farbigen Strich darunter.",
+      "Zuerst markieren: Maustaste vor dem ersten Buchstaben drücken und bis hinter den letzten ziehen. Der Farbknopf ist das „A“ mit dem farbigen Strich.",
       "Unter jeder Farbe steht ihr Name.",
     ],
     sterne: { fehlerFuerZwei: 3, fehlerFuerDrei: 1, sekundenFuerDrei: 40 },
@@ -131,7 +140,7 @@ export const LEVEL_WELT5 = {
     lernziel: "Du machst Text fett, kursiv oder unterstrichen.",
     erklaerung: [
       "B macht die Schrift fett (dick). I macht sie kursiv (schräg). U unterstreicht sie.",
-      "Klick erst auf die Zeile, dann auf den Knopf. Noch ein Klick macht es wieder rückgängig.",
+      "Markier erst die ganze Zeile, dann klick auf den Knopf. Noch ein Klick macht es wieder rückgängig.",
     ],
     aufgabe: "Mach, was ich sage.",
     typ: "schreiben",
@@ -149,7 +158,7 @@ export const LEVEL_WELT5 = {
       gestalte("Steckbrief.docx", STECKBRIEF, { zeile: "Lieblingsessen: Möhren", kursiv: true, fett: true }, "Mach „Lieblingsessen: Möhren“ fett und kursiv."),
     ] },
     hilfen: [
-      "B wie „bold“ (englisch für fett), I wie „italic“ (kursiv), U wie „underline“ (unterstrichen).",
+      "Erst markieren (drücken, ziehen, loslassen), dann B, I oder U. B wie „bold“ (englisch für fett), I wie „italic“ (kursiv), U wie „underline“ (unterstrichen).",
       "Ist ein Knopf blau, ist er gerade an. Noch ein Klick schaltet ihn aus.",
     ],
     sterne: { fehlerFuerZwei: 3, fehlerFuerDrei: 1, sekundenFuerDrei: 50 },
@@ -159,7 +168,7 @@ export const LEVEL_WELT5 = {
     titel: "Bild einfügen",
     lernziel: "Du fügst ein Bild an der richtigen Stelle ein.",
     erklaerung: [
-      "Ein Bild kommt immer UNTER die Zeile, die markiert ist. Klick also zuerst auf die richtige Zeile.",
+      "Ein Bild kommt immer UNTER die Zeile, in der der Schreibstrich steht. Klick also zuerst in die richtige Zeile.",
       "Dann oben auf „Bild“ und das passende Bild aussuchen.",
     ],
     aufgabe: "Mach, was ich sage.",
@@ -175,7 +184,7 @@ export const LEVEL_WELT5 = {
       bild("Steckbrief.docx", STECKBRIEF, "bit", "Lieblingsessen: Möhren", "Füge ganz unten, unter „Lieblingsessen: Möhren“, das Bild „Bit“ ein."),
     ] },
     hilfen: [
-      "Zuerst die Zeile anklicken, UNTER die das Bild soll.",
+      "Zuerst in die Zeile klicken, UNTER die das Bild soll. Markieren musst du hier nicht.",
       "Der Knopf „Bild“ ist oben rechts in der Leiste.",
     ],
     sterne: { fehlerFuerZwei: 3, fehlerFuerDrei: 1, sekundenFuerDrei: 40 },
@@ -252,7 +261,7 @@ export const LEVEL_WELT5 = {
     },
     hilfen: [
       "Lies genau, was ich sage. Dort steht immer, was als Nächstes dran ist.",
-      "Erst die Zeile anklicken, dann oben den Knopf. Speichern unter: im Menü „Datei“.",
+      "Erst die ganze Zeile markieren (drücken, ziehen, loslassen), dann oben den Knopf. Speichern unter: im Menü „Datei“.",
     ],
     sterne: { fehlerFuerZwei: 5, fehlerFuerDrei: 2, sekundenFuerDrei: 150 },
   },

@@ -606,3 +606,9 @@ canvas.sprite { image-rendering: pixelated; display: block; flex: none; }
 .sch-dialog-knoepfe { display: flex; gap: 0.6rem; justify-content: flex-end; }
 .sch-dialog .mit-hilfe { outline: 4px dashed var(--akzent); outline-offset: 2px; }
 .sch-unter-speichern { position: relative; }
+
+/* Textprogramm: Markieren durch Ziehen und Schreibstrich */
+.sch-text.teil { background: #9cc3ff; }
+.sch-zeile .schreibstrich { margin-left: 2px; }
+.sch-bild.cursor { border-color: #9cc3ff; }
+.schreiben .sch-zeile { cursor: text; }

@@ -20,11 +20,16 @@
        }
      Ziele:
        { gespeichert: true }                     Speichern (egal wie)
-       { gespeichert: true, nurSymbol: true }    nur mit dem Speichern-Symbol
+       { gespeichert: true, weg: "symbol" }      mit dem Speichern-Symbol
+       { gespeichert: true, weg: "tasten" }      mit Strg+S
        { format: { zeile: "Einladung", fett: true, groesse: 36 } }
            Eigenschaften: schrift, groesse, farbe, fett, kursiv, unterstrichen
        { bild: { bild: "haus", nach: "Einladung" } }   (nach darf fehlen)
        { gespeichertUnter: { ort: "/Dokumente/Schule", name: "Referat.docx" } }
+           ersteSpeicherung: true = neues Dokument, „Speichern“ öffnet den Dialog
+           (sonst zeigt die Hilfe auf Datei → Speichern unter)
+     Formatieren geht nur, wenn die GANZE Zeile markiert ist (Ziehen mit der
+     Maus). Für ein Bild reicht ein Klick in die Zeile (Schreibstrich).
      Mögliche Werte stehen oben in src/desktop/schreiben.js.
 
    Falsche Änderungen wirken nicht – Bit erklärt, was gesucht ist.
@@ -96,16 +101,24 @@ function bewerte(aktion, ziel, dok) {
   }
   if (art === "oeffnen") return { ok: false, hinweis: "Jetzt brauchst du kein anderes Programm." };
   if (["zeile-waehlen", "start-auf", "start-zu", "aktivieren"].includes(art)) return { ok: true };
+  if (art === "teil-markiert") {
+    return ziel.format
+      ? { ok: true, keinFehler: true, hinweis: "Fast! Markier die ganze Zeile – vom ersten bis zum letzten Buchstaben." }
+      : { ok: true };
+  }
 
   if (art === "format") {
     if (aktion.nr === null || aktion.nr === undefined) {
       return { ok: false, keinFehler: true, hinweis: "Klick zuerst auf die Zeile, die du ändern willst." };
     }
     const z = dok.zeilen[aktion.nr];
-    if (z.bild) return { ok: false, keinFehler: true, hinweis: "Das ist ein Bild. Klick auf eine Zeile mit Text." };
+    if (z.bild) return { ok: false, keinFehler: true, hinweis: "Das ist ein Bild. Markier eine Zeile mit Text." };
+    if (!aktion.ganz) {
+      return { ok: false, keinFehler: true, hinweis: "Markier zuerst die ganze Zeile: Maustaste drücken, festhalten und über die Zeile ziehen." };
+    }
     const f = ziel.format;
     if (!f) return { ok: false, hinweis: "Jetzt bitte nichts an der Schrift ändern." };
-    if (z.text !== f.zeile) return { ok: false, hinweis: `Das ist die falsche Zeile. Klick zuerst auf „${f.zeile}“.` };
+    if (z.text !== f.zeile) return { ok: false, hinweis: `Das ist die falsche Zeile. Markier zuerst „${f.zeile}“.` };
     const e = aktion.eigenschaft;
     if (!(e in f)) {
       const gesucht = eigenschaften(f).find((x) => z[x] !== f[x]) || eigenschaften(f)[0];
@@ -122,7 +135,7 @@ function bewerte(aktion, ziel, dok) {
     if (b.nach) {
       const nach = aktion.nach === null || aktion.nach === undefined ? null : dok.zeilen[aktion.nach];
       if (!nach || nach.text !== b.nach) {
-        return { ok: false, hinweis: `Das Bild soll unter die Zeile „${b.nach}“. Klick zuerst auf diese Zeile.` };
+        return { ok: false, hinweis: `Das Bild soll unter die Zeile „${b.nach}“. Klick zuerst in diese Zeile.` };
       }
     }
     return { ok: true };
@@ -133,8 +146,14 @@ function bewerte(aktion, ziel, dok) {
     if (ziel.gespeichertUnter) {
       return { ok: false, hinweis: "„Speichern“ speichert nur am alten Platz mit dem alten Namen. Hier brauchst du „Speichern unter“ im Menü „Datei“." };
     }
-    if (ziel.gespeichert && ziel.nurSymbol && aktion.weg !== "symbol") {
-      return { ok: false, keinFehler: true, hinweis: (aktion.weg === "tasten" ? "Strg+S klappt auch!" : "Das klappt auch!") + " Aber nimm diesmal das Speichern-Symbol – die Diskette." };
+    if (ziel.gespeichert && ziel.weg && aktion.weg !== ziel.weg) {
+      const anders = aktion.weg === "tasten" ? "Strg+S klappt auch!" : "Das klappt auch!";
+      return {
+        ok: false, keinFehler: true,
+        hinweis: ziel.weg === "symbol"
+          ? anders + " Aber nimm diesmal das Speichern-Symbol – die Diskette."
+          : anders + " Aber probier diesmal die Tastenkombination: Strg+S.",
+      };
     }
     return { ok: true };
   }
@@ -156,7 +175,7 @@ function hilfeFuer(ziel, dok, prog) {
   if (ziel.format) {
     const f = ziel.format;
     const nr = zeilenNr(dok, f.zeile);
-    if (prog.auswahl !== nr) return [{ wo: "zeile", nr, text: "Hier klicken" }];
+    if (prog.auswahl !== nr || !prog.ganz) return [{ wo: "zeile", nr, text: "Über die ganze Zeile ziehen", ziehen: true }];
     const e = eigenschaften(f).find((x) => dok.zeilen[nr][x] !== f[x]);
     if (!e) return [];
     if (KNOEPFE_AN_AUS.includes(e)) return [{ wo: "knopf", id: e, text: "Hier klicken" }];
@@ -165,15 +184,19 @@ function hilfeFuer(ziel, dok, prog) {
   }
   if (ziel.bild) {
     const b = ziel.bild;
-    if (b.nach && prog.auswahl !== zeilenNr(dok, b.nach)) return [{ wo: "zeile", nr: zeilenNr(dok, b.nach), text: "Hier klicken" }];
+    if (b.nach && prog.auswahl !== zeilenNr(dok, b.nach)) return [{ wo: "zeile", nr: zeilenNr(dok, b.nach), text: "In die Zeile klicken" }];
     if (prog.offen === "bild") return [{ wo: "option", liste: "bild", wert: b.bild }];
     return [{ wo: "knopf", id: "bild", text: "Hier klicken" }];
   }
-  if (ziel.gespeichert) return [{ wo: "knopf", id: "speichern", text: "Hier klicken" }];
+  if (ziel.gespeichert) {
+    if (ziel.weg === "tasten") return [{ wo: "status", text: "Strg + S drücken" }];
+    return [{ wo: "knopf", id: "speichern", text: "Hier klicken" }];
+  }
   if (ziel.gespeichertUnter) {
     const g = ziel.gespeichertUnter;
     const u = prog.unter;
     if (!u) {
+      if (g.ersteSpeicherung && !dok.name) return [{ wo: "knopf", id: "speichern", text: "Hier klicken" }];
       if (prog.offen === "datei") return [{ wo: "option", liste: "datei", wert: "unter" }];
       return [{ wo: "knopf", id: "datei", text: "Hier klicken" }];
     }
@@ -219,7 +242,7 @@ export const schreiben = {
     let gesperrt = false;
     let timer = null;
 
-    if (mitHilfe) zeigeMaus(tafel, "links", "Linke Taste: einmal klicken.");
+    if (mitHilfe) zeigeMaus(tafel, "links", "Linke Taste: klicken – oder drücken, halten und ziehen.");
 
     function aktualisiereHilfe() {
       if (!prog || !mitHilfe) return;
@@ -295,7 +318,7 @@ export const schreiben = {
     const aufgabe = einstellungen.aufgaben[0];
     const desk = baueDesktop(flaeche);
     const buehne = demoBuehne(flaeche);
-    zeigeMaus(tafel, "links", "Linke Taste: einmal klicken.");
+    zeigeMaus(tafel, "links", "Linke Taste: klicken – oder drücken, halten und ziehen.");
     let prog = null;
     let platz = null;
     let timer = [];
@@ -316,7 +339,14 @@ export const schreiben = {
       }
       prog.setzeHilfe(hilfe);
       buehne.sage("");
-      buehne.bewege(...mitteInProzent(element, flaeche), 1000);
+      if (h.ziehen) {
+        // zum Anfang der Zeile, dort beginnt das Markieren
+        const r = element.getBoundingClientRect();
+        const f = flaeche.getBoundingClientRect();
+        buehne.bewege(((r.left + 6 - f.left) / f.width) * 100, ((r.top + r.height / 2 - f.top) / f.height) * 100, 1000);
+      } else {
+        buehne.bewege(...mitteInProzent(element, flaeche), 1000);
+      }
       timer.push(setTimeout(() => {
         buehne.sage(h.text === "Doppelklick" ? "Doppelklick!" : h.wo === "unter-name" ? "Tippen" : "Klick!");
         if (h.wo === "unter-name") {
@@ -325,7 +355,21 @@ export const schreiben = {
           timer.push(setTimeout(() => schritt(nr, zaehler + 1), 150 * name.length + 500));
           return;
         }
-        if (h.text === "Doppelklick") element.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+        if (h.ziehen) {
+          // über die Zeile ziehen: Markierung wächst Buchstabe für Buchstabe
+          const r = element.getBoundingClientRect();
+          const f = flaeche.getBoundingClientRect();
+          const laenge = platz.dok.zeilen[h.nr].text.length;
+          buehne.sage("Drücken und ziehen");
+          timer.push(setTimeout(() => buehne.bewege(((r.left + r.width * 0.8 - f.left) / f.width) * 100, ((r.top + r.height / 2 - f.top) / f.height) * 100, 1400), 300));
+          for (let i = 1; i <= laenge; i++) timer.push(setTimeout(() => prog.zeigeTeil(h.nr, i), 300 + (1300 / laenge) * i));
+          timer.push(setTimeout(() => { buehne.sage("Loslassen!"); prog.markiereZeile(h.nr); }, 1800));
+          timer.push(setTimeout(() => schritt(nr, zaehler + 1), 2500));
+          return;
+        }
+        if (h.wo === "zeile") prog.setzeStrich(h.nr);
+        else if (h.wo === "status") { buehne.sage("Strg + S"); desk.fuehreAus({ programm: "schreiben", art: "speichern", weg: "tasten" }); }
+        else if (h.text === "Doppelklick") element.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
         else element.click();
         timer.push(setTimeout(() => schritt(nr, zaehler + 1), 700));
       }, 1200));

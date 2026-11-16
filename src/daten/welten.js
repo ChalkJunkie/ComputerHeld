@@ -89,7 +89,7 @@ export const WELTEN = [
     farben: { hell: "#fbe9b0", mittel: "#f0c040", dunkel: "#8a5a00" },
     bonusAbSternen: 14,
     level: [
-      { id: "5.1", titel: "Speichern-Symbol",        art: "normal" },
+      { id: "5.1", titel: "Speichern",               art: "normal" },
       { id: "5.2", titel: "Schriftart und -größe",   art: "normal" },
       { id: "5.3", titel: "Schriftfarbe",            art: "normal" },
       { id: "5.4", titel: "Fett, kursiv, unterstrichen", art: "normal" },

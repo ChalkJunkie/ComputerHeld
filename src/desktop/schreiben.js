@@ -5,12 +5,17 @@
      Schriftart, Schriftgröße, fett, kursiv, unterstrichen, Schriftfarbe,
      Bild einfügen.
 
-   Vereinfachung für Kinder: Man klickt eine ZEILE an (sie wird markiert),
-   und alles in der Symbolleiste gilt dann für diese ganze Zeile.
+   Markieren wie im echten Programm: Maustaste auf der Zeile drücken,
+   festhalten, über die Zeile ziehen, loslassen. Ist die GANZE Zeile
+   markiert, gilt alles in der Symbolleiste für diese Zeile.
+   Ein einfacher Klick setzt nur den Schreibstrich in die Zeile
+   (dort kommt z. B. ein Bild hin).
 
    Alles, was etwas verändert, geht als „Aktion“ an den Desktop, und der
    fragt vorher die Aufgabe, ob es erlaubt ist:
-     zeile-waehlen, format, bild-einfuegen, speichern, speichern-unter
+     zeile-waehlen (ganz: true = ganze Zeile markiert, false = nur Schreibstrich),
+     teil-markiert (nur ein Stück der Zeile markiert),
+     format, bild-einfuegen, speichern, speichern-unter
    ===================================================================== */
 
 import { erzeugeSprite } from "../engine/sprite-render.js";
@@ -80,7 +85,10 @@ export function baueSchreiben(kontext) {
   const ausloesen = (aktion) => kontext.ausloesen({ programm: "schreiben", ...aktion });
   const geaendert = () => { if (kontext.beiAenderung) kontext.beiAenderung(); };
 
-  let auswahl = null;      // Nummer der markierten Zeile
+  let auswahl = null;      // Nummer der Zeile mit Schreibstrich oder Markierung
+  let ganz = false;        // true: die ganze Zeile ist markiert
+  let teil = null;         // beim Ziehen: { nr, von, bis } (markierte Buchstaben)
+  let ziehen = null;       // { nr, start, x, y, bewegt }
   let offen = null;        // offene Liste: "datei", "schrift", "groesse", "farbe", "bild"
   let unter = null;        // „Speichern unter“-Fenster: { ort, name }
   let hilfe = [];
@@ -116,7 +124,7 @@ export function baueSchreiben(kontext) {
   wurzel.append(listenFeld);
 
   const zeile = () => (auswahl === null ? null : dok.zeilen[auswahl]);
-  const format = (eigenschaft, wert) => ausloesen({ art: "format", eigenschaft, wert, nr: auswahl });
+  const format = (eigenschaft, wert) => ausloesen({ art: "format", eigenschaft, wert, nr: auswahl, ganz });
 
   k.fett.addEventListener("click", () => format("fett", !(zeile() && zeile().fett)));
   k.kursiv.addEventListener("click", () => format("kursiv", !(zeile() && zeile().kursiv)));
@@ -249,6 +257,72 @@ export function baueSchreiben(kontext) {
     ausloesen({ art: "speichern-unter", ort: unter.ort, name });
   }
 
+  /* ---------- Markieren durch Ziehen ---------- */
+  /* Welcher Buchstabe (0 bis Länge) liegt unter dem Mauszeiger? */
+  function indexBei(e, nr) {
+    const zeileEl = seite.querySelector(`.sch-zeile[data-nr="${nr}"]`);
+    const laenge = dok.zeilen[nr].text.length;
+    if (!zeileEl) return 0;
+    const r = zeileEl.getBoundingClientRect();
+    // außerhalb der Zeile: Anfang oder Ende
+    if (e.clientY > r.bottom || e.clientX >= r.right) return laenge;
+    if (e.clientY < r.top || e.clientX <= r.left) return 0;
+    let knoten = null, versatz = 0;
+    if (document.caretPositionFromPoint) {
+      const pos = document.caretPositionFromPoint(e.clientX, e.clientY);
+      if (pos) { knoten = pos.offsetNode; versatz = pos.offset; }
+    } else if (document.caretRangeFromPoint) {
+      const pos = document.caretRangeFromPoint(e.clientX, e.clientY);
+      if (pos) { knoten = pos.startContainer; versatz = pos.startOffset; }
+    }
+    let summe = 0;
+    for (const stueck of zeileEl.querySelectorAll(".sch-text")) {
+      if (knoten && stueck.contains(knoten)) return Math.min(laenge, summe + versatz);
+      summe += stueck.textContent.length;
+    }
+    // hinter dem letzten Buchstaben (rechts in der Zeile)
+    return e.clientX > r.left + r.width / 2 ? laenge : 0;
+  }
+  seite.addEventListener("mousedown", (e) => {
+    if (e.button !== 0) return;
+    const zeileEl = e.target.closest(".sch-zeile");
+    if (!zeileEl) return;
+    e.preventDefault(); // kein Markieren durch den Browser – das machen wir selbst
+    const nr = Number(zeileEl.dataset.nr);
+    if (dok.zeilen[nr].bild) {
+      ausloesen({ art: "zeile-waehlen", nr, ganz: false });
+      return;
+    }
+    ziehen = { nr, start: indexBei(e, nr), x: e.clientX, y: e.clientY, bewegt: false };
+  });
+  function beiBewegung(e) {
+    if (!ziehen) return;
+    if (!ziehen.bewegt && Math.hypot(e.clientX - ziehen.x, e.clientY - ziehen.y) < 5) return;
+    ziehen.bewegt = true;
+    teil = { nr: ziehen.nr, von: ziehen.start, bis: indexBei(e, ziehen.nr) };
+    zeichne();
+  }
+  function beimLoslassen() {
+    if (!ziehen) return;
+    const { nr, bewegt } = ziehen;
+    ziehen = null;
+    if (!bewegt) {
+      teil = null;
+      ausloesen({ art: "zeile-waehlen", nr, ganz: false }); // nur Schreibstrich
+      return;
+    }
+    const von = Math.min(teil.von, teil.bis);
+    const bis = Math.max(teil.von, teil.bis);
+    if (von === 0 && bis >= dok.zeilen[nr].text.length) {
+      teil = null;
+      ausloesen({ art: "zeile-waehlen", nr, ganz: true });
+    } else {
+      ausloesen({ art: "teil-markiert", nr });
+    }
+  }
+  window.addEventListener("mousemove", beiBewegung);
+  window.addEventListener("mouseup", beimLoslassen);
+
   /* ---------- Strg+S ---------- */
   function beiTaste(e) {
     if (!wurzel.isConnected || unter) return;
@@ -280,21 +354,27 @@ export function baueSchreiben(kontext) {
 
     // Das Blatt
     seite.replaceChildren(...dok.zeilen.map((zl, nr) => {
-      const e = el("div", "sch-zeile" + (nr === auswahl ? " markiert" : ""));
+      const e = el("div", "sch-zeile");
       e.dataset.nr = nr;
       if (zl.bild) {
         e.classList.add("sch-bild");
+        e.classList.toggle("cursor", nr === auswahl);
         e.append(bildVon(zl.bild));
-      } else {
-        e.textContent = zl.text;
-        e.style.fontFamily = schriftMitErsatz(zl.schrift);
-        e.style.fontSize = zl.groesse * ANZEIGE_FAKTOR + "px";
-        e.style.color = FARBEN[zl.farbe].wert;
-        e.style.fontWeight = zl.fett ? "bold" : "normal";
-        e.style.fontStyle = zl.kursiv ? "italic" : "normal";
-        e.style.textDecoration = zl.unterstrichen ? "underline" : "none";
+        return e;
       }
-      e.addEventListener("click", () => { if (nr !== auswahl) ausloesen({ art: "zeile-waehlen", nr }); });
+      e.dataset.text = zl.text;
+      e.style.fontFamily = schriftMitErsatz(zl.schrift);
+      e.style.fontSize = zl.groesse * ANZEIGE_FAKTOR + "px";
+      e.style.color = FARBEN[zl.farbe].wert;
+      e.style.fontWeight = zl.fett ? "bold" : "normal";
+      e.style.fontStyle = zl.kursiv ? "italic" : "normal";
+      e.style.textDecoration = zl.unterstrichen ? "underline" : "none";
+      // Text in drei Stücke: davor – markiert – danach
+      let von = 0, bis = 0;
+      if (teil && teil.nr === nr) { von = Math.min(teil.von, teil.bis); bis = Math.max(teil.von, teil.bis); }
+      e.append(el("span", "sch-text", zl.text.slice(0, von)), el("span", "sch-text teil", zl.text.slice(von, bis)), el("span", "sch-text", zl.text.slice(bis)));
+      if (nr === auswahl && ganz) e.classList.add("markiert");
+      else if (nr === auswahl && !teil) e.append(el("span", "schreibstrich"));
       return e;
     }));
     markiere();
@@ -311,6 +391,7 @@ export function baueSchreiben(kontext) {
       case "unter-hoch": return dialog.querySelector(".sch-unter-hoch");
       case "unter-name": return dialog.querySelector(".sch-unter-name");
       case "unter-speichern": return dialog.querySelector(".sch-unter-speichern");
+      case "status": return status;
       default: return null;
     }
   }
@@ -323,8 +404,8 @@ export function baueSchreiben(kontext) {
       ziel.classList.add("mit-hilfe");
       if (h.text) {
         const schild = el("span", "desktop-schild", h.text);
-        if (h.wo === "knopf" || h.wo.startsWith("unter")) schild.classList.add("unten");
-        if (h.wo === "zeile") schild.classList.add("in-zeile");
+        if (h.wo === "knopf" || (h.wo.startsWith("unter") && h.wo !== "unter-name")) schild.classList.add("unten");
+        if (h.wo === "zeile" || h.wo === "status") schild.classList.add("in-zeile");
         ziel.append(schild);
       }
     }
@@ -333,9 +414,15 @@ export function baueSchreiben(kontext) {
   /* ---------- Erlaubte Aktionen ausführen (vom Desktop aufgerufen) ---------- */
   function anwenden(aktion) {
     if (aktion.programm !== "schreiben") return;
+    if (aktion.art !== "teil-markiert") teil = null;
     switch (aktion.art) {
       case "zeile-waehlen":
         auswahl = aktion.nr;
+        ganz = Boolean(aktion.ganz);
+        break;
+      case "teil-markiert":
+        auswahl = aktion.nr;
+        ganz = false;
         break;
       case "format":
         dok.zeilen[aktion.nr][aktion.eigenschaft] = aktion.wert;
@@ -345,6 +432,7 @@ export function baueSchreiben(kontext) {
         const stelle = aktion.nach === null || aktion.nach === undefined ? dok.zeilen.length : aktion.nach + 1;
         dok.zeilen.splice(stelle, 0, { bild: aktion.bild });
         auswahl = stelle;
+        ganz = false;
         dok.gespeichert = false;
         break;
       }
@@ -371,13 +459,21 @@ export function baueSchreiben(kontext) {
   const programm = {
     element: wurzel,
     get auswahl() { return auswahl; },
+    get ganz() { return ganz; },
     get offen() { return offen; },
     get unter() { return unter; },
     setzeHilfe(liste) { hilfe = liste || []; markiere(); },
     elementFuer,
     // für Bits Vorführung
     setzeName(text) { if (namensFeld) { namensFeld.value = text; unter.name = text; } },
-    beenden() { window.removeEventListener("keydown", beiTaste); },
+    zeigeTeil(nr, bis) { teil = { nr, von: 0, bis }; zeichne(); },
+    markiereZeile(nr) { teil = null; ausloesen({ art: "zeile-waehlen", nr, ganz: true }); },
+    setzeStrich(nr) { teil = null; ausloesen({ art: "zeile-waehlen", nr, ganz: false }); },
+    beenden() {
+      window.removeEventListener("keydown", beiTaste);
+      window.removeEventListener("mousemove", beiBewegung);
+      window.removeEventListener("mouseup", beimLoslassen);
+    },
   };
   zeichne();
   if (kontext.beiStart) kontext.beiStart(programm);
