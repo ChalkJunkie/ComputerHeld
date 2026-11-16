@@ -27,7 +27,8 @@ const REIHEN = [
    ["C", "KeyC", 1], ["V", "KeyV", 1], ["B", "KeyB", 1], ["N", "KeyN", 1], ["M", "KeyM", 1],
    [",", "Comma", 1], [".", "Period", 1], ["-", "Slash", 1], ["Umschalt", "ShiftRight", 2.25]],
   [["Strg", "ControlLeft", 1.5], ["Win", "MetaLeft", 1.25], ["Alt", "AltLeft", 1.25],
-   ["Leertaste", "Space", 6.25], ["AltGr", "AltRight", 1.25], ["Strg", "ControlRight", 1.5], ["", null, 2]],
+   ["Leertaste", "Space", 6.25], ["AltGr", "AltRight", 1.25], ["Strg", "ControlRight", 1.5],
+   ["←", "ArrowLeft", 1], ["→", "ArrowRight", 1]],
 ];
 
 export function baueTastatur() {

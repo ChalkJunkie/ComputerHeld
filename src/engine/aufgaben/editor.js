@@ -31,7 +31,8 @@
          ]
        }
      Tastennamen: Enter, Leertaste, Tab, Esc, Rücktaste, Entf,
-                  Strg+A, Strg+C, Strg+X, Strg+V, Strg+Z, Strg+S
+                  Strg+A, Strg+C, Strg+X, Strg+V, Strg+Z, Strg+S,
+                  Pfeiltasten: →, ←, Umschalt+→, Strg+→, Strg+Umschalt+→ (ebenso mit ←)
    ===================================================================== */
 
 import { baueTastatur, tastenFuerZeichen, tastenFuerName } from "./tastatur-bild.js";
@@ -45,14 +46,24 @@ const NAMEN = {
   "Enter": "Enter", "Leertaste": " ", "Tab": "Tab", "Esc": "Escape",
   "Rücktaste": "Backspace", "Entf": "Delete",
 };
-const TASTEN_MIT_WIRKUNG = ["Enter", "Tab", "Escape", "Backspace", "Delete"];
+const TASTEN_MIT_WIRKUNG = ["Enter", "Tab", "Escape", "Backspace", "Delete", "ArrowLeft", "ArrowRight"];
+const PFEILE = { "→": "ArrowRight", "←": "ArrowLeft" };
 
-/* "Strg+Z" -> "strg+z", "Rücktaste" -> "Backspace" */
+/* "Strg+Z" -> "strg+z", "Rücktaste" -> "Backspace",
+   "Strg+Umschalt+→" -> "strg+umschalt+ArrowRight" */
 function wertVon(name) {
+  const pfeil = Object.keys(PFEILE).find((p) => name.endsWith(p));
+  if (pfeil) {
+    return (name.includes("Strg+") ? "strg+" : "") + (name.includes("Umschalt+") ? "umschalt+" : "") + PFEILE[pfeil];
+  }
   if (name.startsWith("Strg+")) return "strg+" + name.slice(5).toLowerCase();
   return NAMEN[name];
 }
 function nameVon(wert) {
+  if (wert.includes("Arrow")) {
+    const pfeil = wert.endsWith("Right") ? "→" : "←";
+    return (wert.includes("strg+") ? "Strg+" : "") + (wert.includes("umschalt+") ? "Umschalt+" : "") + pfeil;
+  }
   if (wert.startsWith("strg+")) return "Strg+" + wert.slice(5).toUpperCase();
   const name = Object.keys(NAMEN).find((n) => NAMEN[n] === wert);
   return name || `„${wert}“`;
@@ -66,6 +77,10 @@ function aktionAus(e) {
   const altGr = e.altKey || (e.getModifierState && e.getModifierState("AltGraph"));
   if (e.ctrlKey && !altGr && !e.metaKey && e.key.length === 1) {
     return { art: "kuerzel", wert: "strg+" + e.key.toLowerCase() };
+  }
+  // Pfeiltasten mit Strg und/oder Umschalt
+  if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+    return { art: e.ctrlKey || e.shiftKey ? "kuerzel" : "taste", wert: (e.ctrlKey ? "strg+" : "") + (e.shiftKey ? "umschalt+" : "") + e.key };
   }
   if (e.key.length === 1) return { art: "zeichen", wert: e.key };
   return { art: "taste", wert: e.key };
@@ -97,6 +112,7 @@ function leseText(vorlage) {
 function neuerZustand(start = {}) {
   const z = leseText(start.text || "");
   z.ablage = null;            // Zwischenablage
+  z.anker = null;             // Beginn einer Markierung mit Umschalt+Pfeil
   z.gespeichert = false;
   z.dialog = start.dialog ? { ...start.dialog } : null;
   z.felder = start.felder ? { namen: start.felder, fokus: 0 } : null;
@@ -130,8 +146,47 @@ function einfuegen(z, neu, merken = true) {
   geaendert(z);
 }
 
+/* Wortgrenzen wie bei Windows: Strg+→ springt hinter das Wort und die
+   Leerzeichen danach, Strg+← an den Anfang des Worts davor. */
+function wortRechts(text, i) {
+  while (i < text.length && text[i] !== " " && text[i] !== "\n") i++;
+  while (i < text.length && text[i] === " ") i++;
+  return i;
+}
+function wortLinks(text, i) {
+  while (i > 0 && text[i - 1] === " ") i--;
+  while (i > 0 && text[i - 1] !== " " && text[i - 1] !== "\n") i--;
+  return i;
+}
+
+/* Pfeiltasten: Strich bewegen, mit Umschalt dabei markieren */
+function bewegePfeil(z, wert) {
+  const markieren = wert.includes("umschalt+");
+  const wortweise = wert.includes("strg+");
+  const rechts = wert.endsWith("Right");
+  // Anker = Stelle, an der das Markieren begonnen hat
+  if (markieren && z.anker === null) z.anker = z.cursor;
+  if (!markieren && z.auswahl) {
+    // ohne Umschalt: Markierung aufheben, Strich an ihren Rand
+    z.cursor = rechts ? z.auswahl[1] : z.auswahl[0];
+    z.anker = null;
+    z.auswahl = null;
+    if (!wortweise) return;
+  }
+  if (wortweise) z.cursor = rechts ? wortRechts(z.text, z.cursor) : wortLinks(z.text, z.cursor);
+  else z.cursor = Math.max(0, Math.min(z.text.length, z.cursor + (rechts ? 1 : -1)));
+  if (markieren && z.anker !== z.cursor) z.auswahl = [Math.min(z.anker, z.cursor), Math.max(z.anker, z.cursor)];
+  else if (markieren) z.auswahl = null;
+  else z.anker = null;
+}
+
 /* Führt eine Taste oder Kombination wirklich aus */
 function wende(z, wert, schritt = {}) {
+  if (wert.includes("Arrow")) {
+    bewegePfeil(z, wert);
+    return;
+  }
+  z.anker = null;
   switch (wert) {
     case "Enter":
       if (z.dialog) z.dialog = null; // OK
@@ -236,6 +291,11 @@ function hinweisTaste(erlaubt, aktion, mitHilfe) {
   }
   if (soll === "Delete" && aktion.wert === "Backspace") {
     return "Das war die Rücktaste. Sie löscht links vom Strich. Der rote Buchstabe steht rechts.";
+  }
+  if (soll.includes("Arrow") && aktion.wert.includes("Arrow")) {
+    return soll.includes("strg+") && soll.includes("umschalt+")
+      ? `Das war ${nameVon(aktion.wert)}. Für ein ganzes Wort: Strg und Umschalt festhalten, dann den Pfeil drücken.`
+      : `Das war ${nameVon(aktion.wert)}. Gesucht ist ${nameVon(soll)}.`;
   }
   if (["Enter", "Escape"].includes(soll) && ["Enter", "Escape"].includes(aktion.wert)) {
     return "Enter sagt „OK“. Esc bricht ab.";
@@ -425,7 +485,7 @@ export const editor = {
       const s = schritte[nr];
       let text = s.ansage || `Schreib: „${s.tippe}“`;
       // Beim Üben verrät Bit auch die Taste
-      if (mitHilfe && s.taste) text += ` → ${[].concat(s.taste).join(" oder ")}`;
+      if (mitHilfe && s.taste) text += ` – Taste: ${[].concat(s.taste).join(" oder ")}`;
       beiAnsage(text);
       zeichne();
     }

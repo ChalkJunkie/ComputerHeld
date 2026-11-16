@@ -17,20 +17,26 @@
          ]
        }
      Arten für "ziel": oeffnen, minimieren, maximieren, wiederherstellen,
-                       schliessen, taskleiste
+                       schliessen, taskleiste,
+                       lautstaerke / helligkeit  (mit min und/oder max, z. B. { art: "lautstaerke", min: 90 }),
+                       stumm (mit wert: true oder false),
+                       energie (mit wahl: "herunterfahren", "neustart" oder "abmelden")
      "ziel" darf auch eine Liste sein – dann ist jedes davon richtig.
+     start.extras: { schnell: true, energie: true } schaltet Schnelleinstellungen
+     und den Ein/Aus-Knopf ein (siehe src/desktop/desktop.js).
      Programme: notizen, malen, rechner, musik, fotos (src/desktop/programme.js)
 
    Falsche Klicks wirken nicht: Bit erklärt, was der Knopf tut.
    Startmenü öffnen/schließen und ein Fenster anklicken sind nie falsch.
    ===================================================================== */
 
-import { baueDesktop } from "../../desktop/desktop.js";
+import { baueDesktop, ENERGIE } from "../../desktop/desktop.js";
 import { PROGRAMME } from "../../desktop/programme.js";
 import { mischen, zeigeMaus, demoBuehne } from "./hilfsmittel.js";
 
 const RUNDE_PAUSE_MS = 800;
-const NEUTRAL = ["start-auf", "start-zu", "aktivieren"];
+/* Diese Klicks sind nie falsch: Menüs öffnen, Regler bewegen … */
+const NEUTRAL = ["start-auf", "start-zu", "aktivieren", "panel-auf", "panel-zu", "energie-auf", "energie-zu", "lautstaerke", "helligkeit"];
 
 /* Was der Knopf tut – für Bits Hinweise */
 const WIRKUNG = {
@@ -40,6 +46,12 @@ const WIRKUNG = {
   schliessen: "Das X schließt das Fenster ganz.",
   taskleiste: "Unten in der Taskleiste holst du ein Fenster nach vorn.",
   oeffnen: "Im Startmenü öffnest du ein Programm.",
+  stumm: "„Stumm“ schaltet den Ton ganz aus – und „Ton an“ wieder ein.",
+  energie: {
+    herunterfahren: "„Herunterfahren“ schaltet den Computer ganz aus.",
+    neustart: "„Neu starten“ schaltet den Computer aus und gleich wieder an.",
+    abmelden: "„Abmelden“: Du gehst raus, der Computer bleibt an – für die oder den Nächsten.",
+  },
 };
 /* Wo man klicken muss – nur beim Üben angehängt */
 const WO = {
@@ -49,7 +61,22 @@ const WO = {
   schliessen: "Knopf mit dem X",
   taskleiste: "unten in der Taskleiste",
   oeffnen: "Start, dann das Programm",
+  lautstaerke: "Lautsprecher unten rechts, dann den Regler ziehen",
+  helligkeit: "Sonne unten rechts, dann den Regler ziehen",
+  stumm: "Lautsprecher unten rechts, dann „Stumm“",
+  energie: "Start, dann „Ein/Aus“",
 };
+
+/* Passt eine Aktion zu einem Ziel? Alle Angaben im Ziel müssen stimmen;
+   min und max gelten für den Wert eines Reglers. */
+function passt(z, a) {
+  return z.art === a.art
+    && (z.programm === undefined || z.programm === a.programm)
+    && (z.wahl === undefined || z.wahl === a.wahl)
+    && (z.wert === undefined || z.wert === a.wert)
+    && (z.min === undefined || a.wert >= z.min)
+    && (z.max === undefined || a.wert <= z.max);
+}
 
 const name = (p) => PROGRAMME[p].name;
 const ziele = (schritt) => [].concat(schritt.ziel);
@@ -61,6 +88,8 @@ function reihenfolge(aufgaben, runden, gemischt) {
 }
 
 function hinweis(aktion, ziel) {
+  if (aktion.art === "energie") return "Das war nicht die richtige Wahl. " + WIRKUNG.energie[aktion.wahl];
+  if (aktion.art === "stumm") return WIRKUNG.stumm;
   if (ziel.programm && aktion.programm && aktion.programm !== ziel.programm) {
     return aktion.art === "oeffnen"
       ? `Das war „${name(aktion.programm)}“. Gesucht ist „${name(ziel.programm)}“.`
@@ -95,7 +124,7 @@ export const desktop = {
       if (!schritte[nr]) return false;
       // Klick in der Taskleiste auf das vordere Fenster legt es ab – wie minimieren
       const art = aktion.art === "taskleiste" && desk.istVorn(aktion.programm) ? "minimieren" : aktion.art;
-      if (ziele(schritte[nr]).some((z) => z.art === art && z.programm === aktion.programm)) {
+      if (ziele(schritte[nr]).some((z) => passt(z, { ...aktion, art }))) {
         erledigt = true;
         return true;
       }
@@ -159,8 +188,13 @@ export const desktop = {
     // Klicks der Reihe nach: Beim Öffnen erst „Start“, dann das Programm
     const klicks = [];
     for (const s of aufgabe.schritte) {
-      const ziel = ziele(s)[0];
+      const ziel = { ...ziele(s)[0] };
       if (ziel.art === "oeffnen") klicks.push({ art: "start-auf" });
+      if (ziel.art === "energie") klicks.push({ art: "start-auf" }, { art: "energie-auf" });
+      if (["lautstaerke", "helligkeit", "stumm"].includes(ziel.art)) klicks.push({ art: "panel-auf" });
+      // Regler: auf den gewünschten Wert stellen
+      if (ziel.min !== undefined) ziel.wert = ziel.min;
+      if (ziel.max !== undefined) ziel.wert = ziel.max;
       klicks.push(ziel);
     }
 
@@ -172,6 +206,7 @@ export const desktop = {
       desk.setze(aufgabe.start);
       desk.setzeHilfe(null);
       buehne.setze(50, 50);
+      if (aufgabe.start.extras) zeigeMaus(tafel, "links", "Linke Taste: klicken – beim Regler drücken und ziehen.");
       buehne.sage("");
       let zeit = 700;
       for (const klick of klicks) {

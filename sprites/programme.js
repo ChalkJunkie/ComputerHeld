@@ -214,3 +214,83 @@ export const SYMBOL_DISKETTE = {
     "KKKKKKKKKKKK",
   ],
 };
+
+// --- Symbole für Welt 6 (je 12 x 12) ------------------------------------
+// Lautsprecher und Sonne sind hell, weil sie auf der dunklen Taskleiste stehen.
+export const SYMBOL_LAUTSPRECHER = {
+  breite: 12, hoehe: 12,
+  palette: { W },
+  basis: [
+    "....W.......",
+    "...WW.......",
+    "WWWWW..W....",
+    "WWWWW...W...",
+    "WWWWW.W..W..",
+    "WWWWW..W.W..",
+    "WWWWW..W.W..",
+    "WWWWW.W..W..",
+    "WWWWW...W...",
+    "...WW..W....",
+    "....W.......",
+    "............",
+  ],
+};
+export const SYMBOL_SONNE = {
+  breite: 12, hoehe: 12,
+  palette: { Y: { name: "Sonne", farbe: "#f5c12e" } },
+  basis: [
+    "............",
+    "......Y.....",
+    "..Y...Y...Y.",
+    "...Y.....Y..",
+    ".....YYY....",
+    "....YYYYY...",
+    "YYY.YYYYY.YY",
+    "....YYYYY...",
+    ".....YYY....",
+    "...Y.....Y..",
+    "..Y...Y...Y.",
+    "......Y.....",
+  ],
+};
+export const SYMBOL_EIN_AUS = {
+  breite: 12, hoehe: 12,
+  palette: { K },
+  basis: [
+    ".....KK.....",
+    "..K..KK..K..",
+    ".KK..KK..KK.",
+    "KK...KK...KK",
+    "KK...KK...KK",
+    "KK........KK",
+    "KK........KK",
+    ".KK......KK.",
+    "..KK....KK..",
+    "...KKKKKK...",
+    "............",
+    "............",
+  ],
+};
+export const SYMBOL_DRUCKER = {
+  breite: 12, hoehe: 12,
+  palette: {
+    K, W,
+    G: { name: "Gehäuse", farbe: "#c9c9c9" },
+    N: { name: "Lämpchen", farbe: "#3fae3a" },
+    L: { name: "Zeilen", farbe: "#9a9a9a" },
+  },
+  basis: [
+    "...KKKKKK...",
+    "...KWWWWK...",
+    "...KWWWWK...",
+    "KKKKKKKKKKKK",
+    "KGGGGGGGGGGK",
+    "KGGGGGGGGNGK",
+    "KGGGGGGGGGGK",
+    "KKKWWWWWWKKK",
+    "..KWLLLLWK..",
+    "..KWWWWWWK..",
+    "..KWLLLLWK..",
+    "..KKKKKKKK..",
+  ],
+};

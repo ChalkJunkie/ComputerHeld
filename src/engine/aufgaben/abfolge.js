@@ -22,7 +22,7 @@ export const abfolge = {
     return einstellungen.abschnitte.reduce((summe, a) => summe + a.einstellungen.runden, 0);
   },
 
-  starte({ flaeche, tafel, einstellungen, mitHilfe, beiRichtig, beiFehler, beiFertig, beiAnsage }) {
+  starte({ flaeche, tafel, einstellungen, mitHilfe, beiRichtig, beiFehler, beiHinweis, beiFertig, beiAnsage }) {
     const gesamt = abfolge.anzahlRunden(einstellungen);
     const gemeinsam = {};
     let erledigt = 0;   // Runden aus schon fertigen Abschnitten
@@ -39,6 +39,7 @@ export const abfolge = {
         einstellungen: abschnitt.einstellungen,
         gemeinsam,
         beiFehler,
+        beiHinweis,
         beiAnsage,
         beiRichtig: (geschafft) => beiRichtig(erledigt + geschafft, gesamt),
         beiFertig: () => {

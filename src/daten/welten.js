@@ -105,7 +105,13 @@ export const WELTEN = [
     farben: { hell: "#e4f3f5", mittel: "#a5dbe3", dunkel: "#2b6f7a" },
     bonusAbSternen: 99,
     level: [
-      { id: "6.B", titel: "Abschlussmission", art: "boss" },
+      { id: "6.1", titel: "Geheime Tastenkürzel",      art: "normal" },
+      { id: "6.2", titel: "Markieren mit der Tastatur", art: "normal" },
+      { id: "6.3", titel: "Lautstärke und Helligkeit",  art: "normal" },
+      { id: "6.4", titel: "Ausschalten und Abmelden",   art: "normal" },
+      { id: "6.5", titel: "Drucken und PDF",            art: "normal" },
+      { id: "6.6", titel: "Sicher am Computer",         art: "normal" },
+      { id: "6.B", titel: "Abschlussmission",           art: "boss" },
     ],
   },
 ];

@@ -257,7 +257,8 @@ export function starteLevel(wurzel, level, optionen) {
     flaeche.append(karte);
 
     setzeBit("jubelnd");
-    sage([TEXTE.geschafft, sterne === 3 ? TEXTE.alleSterne : TEXTE.mehrSterne]);
+    // Ein Level kann einen eigenen Abschlusstext haben (z. B. die letzte Mission)
+    sage(level.abschluss || [TEXTE.geschafft, sterne === 3 ? TEXTE.alleSterne : TEXTE.mehrSterne]);
     const liste = [["Nochmal spielen", phaseAnwenden], ["Zurück zur Welt", optionen.beiZurueck]];
     if (optionen.beiNaechstes) liste.push(["Nächstes Level", optionen.beiNaechstes]);
     knoepfe(...liste);

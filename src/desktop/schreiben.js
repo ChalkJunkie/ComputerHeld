@@ -15,11 +15,13 @@
    fragt vorher die Aufgabe, ob es erlaubt ist:
      zeile-waehlen (ganz: true = ganze Zeile markiert, false = nur Schreibstrich),
      teil-markiert (nur ein Stück der Zeile markiert),
-     format, bild-einfuegen, speichern, speichern-unter
+     format, bild-einfuegen, speichern, speichern-unter (als: "pdf" für PDF),
+     drucken (drucker, kopien)
    ===================================================================== */
 
 import { erzeugeSprite } from "../engine/sprite-render.js";
-import { SYMBOL_DISKETTE, SYMBOL_FOTOS, BILD_HAUS } from "../../sprites/programme.js";
+import { SYMBOL_DISKETTE, SYMBOL_FOTOS, BILD_HAUS, SYMBOL_DRUCKER } from "../../sprites/programme.js";
+import { DATEI } from "../../sprites/dateien.js";
 import { ORDNER } from "../../sprites/dateien.js";
 import { BIT } from "../../sprites/bit.js";
 import { STERN, KISTE } from "../../sprites/symbole.js";
@@ -90,7 +92,8 @@ export function baueSchreiben(kontext) {
   let teil = null;         // beim Ziehen: { nr, von, bis } (markierte Buchstaben)
   let ziehen = null;       // { nr, start, x, y, bewegt }
   let offen = null;        // offene Liste: "datei", "schrift", "groesse", "farbe", "bild"
-  let unter = null;        // „Speichern unter“-Fenster: { ort, name }
+  let unter = null;        // „Speichern unter“-Fenster: { ort, name, als }
+  let druck = null;        // Drucken-Fenster: { drucker: "klasse" oder "pdf", kopien }
   let hilfe = [];
 
   /* ---------- Grundgerüst ---------- */
@@ -140,6 +143,7 @@ export function baueSchreiben(kontext) {
       case "datei": return [
         ["speichern", "Speichern", () => ausloesen({ art: "speichern", weg: "menue" })],
         ["unter", "Speichern unter …", () => oeffneUnter()],
+        ["drucken", "Drucken …", () => oeffneDruck()],
       ];
       case "schrift": return SCHRIFTEN.map((s) => [s, s, () => format("schrift", s)]);
       case "groesse": return GROESSEN.map((g) => [g, String(g), () => format("groesse", g)]);
@@ -188,10 +192,74 @@ export function baueSchreiben(kontext) {
   }
 
   /* ---------- „Speichern unter“-Fenster ---------- */
-  function oeffneUnter() {
-    unter = { ort: dok.ort || "/Dokumente", name: dok.name ? dok.name.replace(/\.docx$/i, "") : "Dokument1" };
+  function oeffneUnter(als = "docx") {
+    druck = null;
+    unter = { ort: dok.ort || "/Dokumente", name: dok.name ? dok.name.replace(/\.docx$/i, "") : "Dokument1", als };
     zeichneUnter();
     geaendert();
+  }
+
+  /* ---------- Drucken-Fenster ---------- */
+  function oeffneDruck() {
+    unter = null;
+    druck = { drucker: "klasse", kopien: 1 };
+    zeichneDruck();
+    geaendert();
+  }
+  function schliesseDruck() {
+    druck = null;
+    dialog.hidden = true;
+    geaendert();
+  }
+  function zeichneDruck() {
+    dialog.hidden = !druck;
+    if (!druck) return;
+    const box = el("div", "sch-dialog-box");
+    box.append(el("strong", "sch-dialog-titel", "Drucken"));
+    const wahl = el("div", "druck-wahl");
+    const drucker = [
+      ["klasse", "Drucker im Klassenzimmer", erzeugeSprite(SYMBOL_DRUCKER, { faktor: 3 })],
+      ["pdf", "Als PDF speichern", erzeugeSprite(DATEI, { faktor: 3, pose: "pdf" })],
+    ];
+    for (const [id, name, bildchen] of drucker) {
+      const k = el("button", "druck-drucker" + (druck.drucker === id ? " gewaehlt" : ""));
+      k.type = "button";
+      k.dataset.drucker = id;
+      k.append(bildchen, el("span", "", name));
+      k.addEventListener("click", () => { druck.drucker = id; zeichneDruck(); geaendert(); });
+      wahl.append(k);
+    }
+    box.append(el("span", "", "Drucker:"), wahl);
+    if (druck.drucker === "klasse") {
+      const zeile = el("div", "druck-kopien");
+      const minus = el("button", "ex-knopf druck-minus", "−");
+      const plus = el("button", "ex-knopf druck-plus", "+");
+      minus.type = plus.type = "button";
+      minus.disabled = druck.kopien <= 1;
+      plus.disabled = druck.kopien >= 9;
+      minus.addEventListener("click", () => { druck.kopien--; zeichneDruck(); geaendert(); });
+      plus.addEventListener("click", () => { druck.kopien++; zeichneDruck(); geaendert(); });
+      zeile.append(el("span", "", "Anzahl Exemplare:"), minus, el("strong", "druck-zahl", String(druck.kopien)), plus);
+      box.append(zeile);
+    }
+    const knoepfe = el("div", "sch-dialog-knoepfe");
+    const ok = el("button", "knopf klein druck-ok", druck.drucker === "pdf" ? "Speichern …" : "Drucken");
+    const abbruch = el("button", "knopf klein", "Abbrechen");
+    ok.type = abbruch.type = "button";
+    ok.addEventListener("click", () => {
+      if (druck.drucker === "pdf") oeffneUnter("pdf");
+      else ausloesen({ art: "drucken", drucker: druck.drucker, kopien: druck.kopien });
+    });
+    abbruch.addEventListener("click", schliesseDruck);
+    knoepfe.append(ok, abbruch);
+    box.append(knoepfe);
+    dialog.replaceChildren(box);
+    markiere();
+  }
+  function zeigeMeldung(text) {
+    const m = el("div", "sch-meldung", text);
+    wurzel.append(m);
+    setTimeout(() => m.remove(), 1600);
   }
   function schliesseUnter() {
     unter = null;
@@ -203,7 +271,7 @@ export function baueSchreiben(kontext) {
     dialog.hidden = !unter;
     if (!unter) return;
     const box = el("div", "sch-dialog-box");
-    box.append(el("strong", "sch-dialog-titel", "Speichern unter"));
+    box.append(el("strong", "sch-dialog-titel", unter.als === "pdf" ? "Als PDF speichern" : "Speichern unter"));
 
     const zeileOrt = el("div", "sch-unter-ort");
     const hoch = el("button", "ex-knopf sch-unter-hoch", "⬆ Nach oben");
@@ -236,7 +304,8 @@ export function baueSchreiben(kontext) {
       if (e.key === "Enter") speichereUnter();
       if (e.key === "Escape") schliesseUnter();
     });
-    zeileName.append(el("span", "", "Dateiname:"), namensFeld, el("span", "sch-unter-typ", ".docx (Dokument)"));
+    zeileName.append(el("span", "", "Dateiname:"), namensFeld,
+      el("span", "sch-unter-typ", unter.als === "pdf" ? ".pdf (PDF)" : ".docx (Dokument)"));
 
     const knoepfe = el("div", "sch-dialog-knoepfe");
     const ok = el("button", "knopf klein sch-unter-speichern", "Speichern");
@@ -253,8 +322,9 @@ export function baueSchreiben(kontext) {
   function speichereUnter() {
     let name = (namensFeld ? namensFeld.value : unter.name).trim();
     if (!name) return;
-    if (!/\.docx$/i.test(name)) name += ".docx";
-    ausloesen({ art: "speichern-unter", ort: unter.ort, name });
+    const endung = unter.als === "pdf" ? ".pdf" : ".docx";
+    name = name.replace(/\.(docx|pdf)$/i, "") + endung;
+    ausloesen({ art: "speichern-unter", ort: unter.ort, name, als: unter.als });
   }
 
   /* ---------- Markieren durch Ziehen ---------- */
@@ -325,10 +395,14 @@ export function baueSchreiben(kontext) {
 
   /* ---------- Strg+S ---------- */
   function beiTaste(e) {
-    if (!wurzel.isConnected || unter) return;
+    if (!wurzel.isConnected || unter || druck) return;
     if (e.ctrlKey && !e.altKey && e.key.toLowerCase() === "s") {
       e.preventDefault();
       ausloesen({ art: "speichern", weg: "tasten" });
+    }
+    if (e.ctrlKey && !e.altKey && e.key.toLowerCase() === "p") {
+      e.preventDefault();
+      oeffneDruck();
     }
   }
   window.addEventListener("keydown", beiTaste);
@@ -392,6 +466,10 @@ export function baueSchreiben(kontext) {
       case "unter-name": return dialog.querySelector(".sch-unter-name");
       case "unter-speichern": return dialog.querySelector(".sch-unter-speichern");
       case "status": return status;
+      case "druck-drucker": return dialog.querySelector(`.druck-drucker[data-drucker="${h.wert}"]`);
+      case "druck-plus": return dialog.querySelector(".druck-plus");
+      case "druck-minus": return dialog.querySelector(".druck-minus");
+      case "druck-ok": return dialog.querySelector(".druck-ok");
       default: return null;
     }
   }
@@ -404,7 +482,7 @@ export function baueSchreiben(kontext) {
       ziel.classList.add("mit-hilfe");
       if (h.text) {
         const schild = el("span", "desktop-schild", h.text);
-        if (h.wo === "knopf" || (h.wo.startsWith("unter") && h.wo !== "unter-name")) schild.classList.add("unten");
+        if (h.wo === "knopf" || h.wo.startsWith("druck") || (h.wo.startsWith("unter") && h.wo !== "unter-name")) schild.classList.add("unten");
         if (h.wo === "zeile" || h.wo === "status") schild.classList.add("in-zeile");
         ziel.append(schild);
       }
@@ -441,8 +519,21 @@ export function baueSchreiben(kontext) {
         if (!dok.name) { oeffneUnter(); return; }
         dok.gespeichert = true;
         break;
+      case "drucken":
+        dok.gedruckt = { drucker: aktion.drucker, kopien: aktion.kopien };
+        druck = null;
+        dialog.hidden = true;
+        zeigeMeldung(`Wird gedruckt: ${aktion.kopien} ${aktion.kopien === 1 ? "Exemplar" : "Exemplare"}`);
+        break;
       case "speichern-unter":
         fs.lege(verbinde(aktion.ort, aktion.name));
+        if (aktion.als === "pdf") {
+          // Ein PDF ist eine Kopie zum Lesen – das Dokument selbst bleibt, wie es ist
+          unter = null;
+          dialog.hidden = true;
+          zeigeMeldung("Als PDF gespeichert: " + aktion.name);
+          break;
+        }
         dok.name = aktion.name;
         dok.ort = aktion.ort;
         dok.gespeichert = true;
@@ -462,6 +553,7 @@ export function baueSchreiben(kontext) {
     get ganz() { return ganz; },
     get offen() { return offen; },
     get unter() { return unter; },
+    get druck() { return druck; },
     setzeHilfe(liste) { hilfe = liste || []; markiere(); },
     elementFuer,
     // für Bits Vorführung

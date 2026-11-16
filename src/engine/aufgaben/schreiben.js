@@ -28,6 +28,8 @@
        { gespeichertUnter: { ort: "/Dokumente/Schule", name: "Referat.docx" } }
            ersteSpeicherung: true = neues Dokument, „Speichern“ öffnet den Dialog
            (sonst zeigt die Hilfe auf Datei → Speichern unter)
+       { gedruckt: { kopien: 2 } }               am Klassen-Drucker gedruckt
+       { pdf: { ort: "/Dokumente", name: "Einladung.pdf" } }   als PDF gespeichert
      Formatieren geht nur, wenn die GANZE Zeile markiert ist (Ziehen mit der
      Maus). Für ein Bild reicht ein Klick in die Zeile (Schreibstrich).
      Mögliche Werte stehen oben in src/desktop/schreiben.js.
@@ -52,7 +54,7 @@ const NAMEN = {
 };
 
 const klein = (x) => String(x).toLowerCase();
-const ohneEndung = (name) => name.replace(/\.docx$/i, "");
+const ohneEndung = (name) => name.replace(/\.(docx|pdf)$/i, "");
 const zeilenNr = (dok, text) => dok.zeilen.findIndex((z) => !z.bild && z.text === text);
 
 function reihenfolge(aufgaben, runden, gemischt) {
@@ -80,6 +82,8 @@ function erfuellt(ziel, dok, fs) {
     const { ort, name } = ziel.gespeichertUnter;
     return fs.existiert(verbinde(ort, name)) && klein(dok.name) === klein(name) && dok.gespeichert;
   }
+  if (ziel.gedruckt) return Boolean(dok.gedruckt) && dok.gedruckt.kopien === ziel.gedruckt.kopien;
+  if (ziel.pdf) return fs.existiert(verbinde(ziel.pdf.ort, ziel.pdf.name));
   return false;
 }
 
@@ -158,7 +162,29 @@ function bewerte(aktion, ziel, dok) {
     return { ok: true };
   }
 
+  if (art === "drucken") {
+    if (ziel.pdf) return { ok: false, hinweis: "Hier soll nichts auf Papier gedruckt werden. Wähl „Als PDF speichern“." };
+    if (!ziel.gedruckt) return { ok: false, hinweis: "Jetzt bitte nichts drucken – das kostet Papier." };
+    const k = ziel.gedruckt.kopien;
+    if (aktion.kopien !== k) return { ok: false, hinweis: `Es sollen ${k} ${k === 1 ? "Exemplar" : "Exemplare"} sein. Stell die Anzahl mit + und − ein.` };
+    return { ok: true };
+  }
+
+  if (art === "speichern-unter" && aktion.als === "pdf") {
+    const g = ziel.pdf;
+    if (!g) {
+      if (ziel.gedruckt) return { ok: false, hinweis: "Hier soll auf Papier gedruckt werden. Wähl den „Drucker im Klassenzimmer“." };
+      return { ok: false, hinweis: ziel.gespeichertUnter ? "Das wäre ein PDF. Gesucht ist das Dokument selbst: Datei → Speichern unter." : "Jetzt brauchst du kein PDF." };
+    }
+    if (klein(aktion.ort) !== klein(g.ort)) {
+      return { ok: false, hinweis: `Du bist im Ordner „${ortName(aktion.ort)}“. Das PDF soll in den Ordner „${ortName(g.ort)}“.` };
+    }
+    if (klein(aktion.name) !== klein(g.name)) return { ok: false, hinweis: `Der Name soll „${ohneEndung(g.name)}“ sein.` };
+    return { ok: true };
+  }
+
   if (art === "speichern-unter") {
+    if (ziel.pdf) return { ok: false, hinweis: "Das wäre ein normales Dokument. Für ein PDF: Datei → Drucken → „Als PDF speichern“." };
     const g = ziel.gespeichertUnter;
     if (!g) return { ok: true };
     if (klein(aktion.ort) !== klein(g.ort)) {
@@ -200,18 +226,39 @@ function hilfeFuer(ziel, dok, prog) {
       if (prog.offen === "datei") return [{ wo: "option", liste: "datei", wert: "unter" }];
       return [{ wo: "knopf", id: "datei", text: "Hier klicken" }];
     }
-    if (klein(u.ort) !== klein(g.ort)) {
-      const tiefer = u.ort === "/" || klein(g.ort).startsWith(klein(u.ort) + "/");
-      if (!tiefer) return [{ wo: "unter-hoch", text: "Hier klicken" }];
-      const naechstes = "/" + teile(g.ort).slice(0, teile(u.ort).length + 1).join("/");
-      return [{ wo: "unter-ordner", pfad: naechstes, text: "Doppelklick" }];
-    }
-    if (klein(u.name.trim().replace(/\.docx$/i, "")) !== klein(ohneEndung(g.name))) {
-      return [{ wo: "unter-name", text: `„${ohneEndung(g.name)}“ tippen` }];
-    }
-    return [{ wo: "unter-speichern", text: "Hier klicken" }];
+    return unterHilfe(g, u);
+  }
+  if (ziel.gedruckt) {
+    const d = prog.druck;
+    if (!d) return prog.offen === "datei" ? [{ wo: "option", liste: "datei", wert: "drucken" }] : [{ wo: "knopf", id: "datei", text: "Hier klicken" }];
+    if (d.drucker !== "klasse") return [{ wo: "druck-drucker", wert: "klasse", text: "Hier klicken" }];
+    if (d.kopien < ziel.gedruckt.kopien) return [{ wo: "druck-plus", text: "Hier klicken" }];
+    if (d.kopien > ziel.gedruckt.kopien) return [{ wo: "druck-minus", text: "Hier klicken" }];
+    return [{ wo: "druck-ok", text: "Hier klicken" }];
+  }
+  if (ziel.pdf) {
+    const u = prog.unter;
+    if (u && u.als === "pdf") return unterHilfe(ziel.pdf, u);
+    const d = prog.druck;
+    if (!d) return prog.offen === "datei" ? [{ wo: "option", liste: "datei", wert: "drucken" }] : [{ wo: "knopf", id: "datei", text: "Hier klicken" }];
+    if (d.drucker !== "pdf") return [{ wo: "druck-drucker", wert: "pdf", text: "Hier klicken" }];
+    return [{ wo: "druck-ok", text: "Hier klicken" }];
   }
   return [];
+}
+
+/* Hilfe im Speichern-Fenster: Ordner finden, Namen tippen, speichern */
+function unterHilfe(g, u) {
+  if (klein(u.ort) !== klein(g.ort)) {
+    const tiefer = u.ort === "/" || klein(g.ort).startsWith(klein(u.ort) + "/");
+    if (!tiefer) return [{ wo: "unter-hoch", text: "Hier klicken" }];
+    const naechstes = "/" + teile(g.ort).slice(0, teile(u.ort).length + 1).join("/");
+    return [{ wo: "unter-ordner", pfad: naechstes, text: "Doppelklick" }];
+  }
+  if (klein(ohneEndung(u.name.trim())) !== klein(ohneEndung(g.name))) {
+    return [{ wo: "unter-name", text: `„${ohneEndung(g.name)}“ tippen` }];
+  }
+  return [{ wo: "unter-speichern", text: "Hier klicken" }];
 }
 
 /* ---------- Dokument und Dateien für eine Aufgabe ---------- */
@@ -350,7 +397,7 @@ export const schreiben = {
       timer.push(setTimeout(() => {
         buehne.sage(h.text === "Doppelklick" ? "Doppelklick!" : h.wo === "unter-name" ? "Tippen" : "Klick!");
         if (h.wo === "unter-name") {
-          const name = ohneEndung(ziel.gespeichertUnter.name);
+          const name = ohneEndung((ziel.gespeichertUnter || ziel.pdf).name);
           [...name].forEach((_, i) => timer.push(setTimeout(() => { prog.setzeName(name.slice(0, i + 1)); prog.setzeHilfe(hilfeFuer(ziel, platz.dok, prog)); }, 150 * i)));
           timer.push(setTimeout(() => schritt(nr, zaehler + 1), 150 * name.length + 500));
           return;

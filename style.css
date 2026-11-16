@@ -612,3 +612,97 @@ canvas.sprite { image-rendering: pixelated; display: block; flex: none; }
 .sch-zeile .schreibstrich { margin-left: 2px; }
 .sch-bild.cursor { border-color: #9cc3ff; }
 .schreiben .sch-zeile { cursor: text; }
+
+/* =====================================================================
+   WELT 6: Quiz, Schnelleinstellungen, Ein/Aus, Drucken
+   ===================================================================== */
+/* Quiz */
+.merk-karten { position: absolute; top: 0.8rem; left: 0; right: 0; display: flex; gap: 0.8rem; justify-content: center; z-index: 2; }
+.merk-karte {
+  width: 15rem; padding: 0.5rem 0.7rem; display: flex; flex-direction: column; gap: 0.3rem;
+  background: var(--weiss); border: var(--rahmen) solid var(--tinte); box-shadow: 4px 4px 0 var(--tinte);
+}
+.merk-karte p { margin: 0; font-size: 0.85rem; }
+.merk-karten.gross { top: 50%; transform: translateY(-50%); }
+.merk-karten.gross .merk-karte { width: 18rem; }
+.merk-karten.gross .merk-karte p { font-size: 1rem; }
+.taste-bild {
+  display: inline-block; font-family: inherit; font-weight: bold; font-size: 1rem; padding: 0.05rem 0.5rem;
+  background: var(--papier); border: 3px solid var(--tinte); border-bottom-width: 5px;
+}
+.quiz-buehne { position: absolute; inset: 0 0 16px 0; display: flex; align-items: center; justify-content: center; }
+.merk-karten ~ .quiz-buehne { top: 7.5rem; }
+.quiz-antworten { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; max-width: 60rem; }
+.quiz-antwort {
+  font: inherit; font-size: 1.05rem; color: var(--tinte); cursor: pointer; min-width: 12rem; padding: 0.9rem 1.2rem;
+  background: var(--weiss); border: var(--rahmen) solid var(--tinte); box-shadow: 4px 4px 0 var(--tinte);
+}
+.quiz-antwort:hover { background: var(--akzent); }
+.quiz-antwort.mit-hilfe, .quiz-fenster .mit-hilfe { outline: 5px dashed var(--tinte); outline-offset: 4px; }
+.quiz-antwort.falsch, .quiz-fenster .falsch { background: #ffb8a0; }
+.quiz-antwort.richtig, .quiz-fenster .richtig { background: #9be07a; }
+.quiz-fenster {
+  width: min(30rem, 90%); background: var(--weiss);
+  border: var(--rahmen) solid var(--tinte); box-shadow: 6px 6px 0 var(--tinte);
+}
+.quiz-titel {
+  display: flex; justify-content: space-between; align-items: center; padding-left: 0.6rem;
+  background: var(--welt-dunkel); color: var(--weiss); font-weight: bold;
+}
+.quiz-x { font: inherit; font-weight: bold; width: 2.6rem; height: 2.2rem; cursor: pointer; background: var(--weiss); border: none; border-left: 3px solid var(--tinte); }
+.quiz-x:hover { background: #ff9b8a; }
+.quiz-inhalt { padding: 0.8rem 1rem; display: flex; flex-direction: column; gap: 0.6rem; }
+.quiz-inhalt p { margin: 0; }
+.quiz-feld { display: flex; align-items: center; gap: 0.6rem; }
+.quiz-feld span { width: 6rem; }
+.quiz-feld input { flex: 1; font: inherit; padding: 0.2rem; border: 3px solid var(--grau-text); cursor: text; }
+.quiz-knoepfe { display: flex; gap: 0.6rem; justify-content: flex-end; flex-wrap: wrap; }
+
+/* Schnelleinstellungen */
+.schnell-knopf { margin-left: 2rem; gap: 0.3rem; border-bottom-color: transparent; }
+.schnell-knopf canvas.durchgestrichen { opacity: 0.4; }
+.schnell-panel {
+  position: absolute; right: 1rem; bottom: 60px; z-index: 31; width: 30rem; padding: 0.7rem 0.9rem;
+  display: flex; flex-direction: column; gap: 0.7rem; box-sizing: border-box;
+  background: var(--papier); border: var(--rahmen) solid var(--tinte); box-shadow: 4px 4px 0 var(--tinte);
+}
+.schnell-panel[hidden] { display: none; }
+.schnell-zeile { position: relative; display: flex; align-items: center; gap: 0.6rem; }
+.schnell-name { width: 6.5rem; font-weight: bold; }
+.schnell-wert { width: 3.5rem; text-align: right; font-weight: bold; }
+.regler { flex: 1; height: 1.6rem; accent-color: var(--welt-dunkel); cursor: pointer; }
+.desktop-schild.links { left: auto; right: calc(100% + 8px); bottom: auto; top: 50%; transform: translateY(-50%); }
+.helligkeit-schleier { position: absolute; inset: 0 0 52px 0; z-index: 29; background: #000; opacity: 0; pointer-events: none; }
+
+/* Ein/Aus */
+.energie-bereich { display: flex; justify-content: flex-end; align-items: flex-end; gap: 0.4rem; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 3px solid var(--grau); }
+.energie-bereich[hidden], .energie-menue[hidden] { display: none; }
+.energie-knopf, .energie-eintrag {
+  position: relative; font: inherit; font-size: 0.85rem; color: var(--tinte); cursor: pointer;
+  display: flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.6rem; background: var(--weiss); border: 3px solid var(--tinte);
+}
+.energie-knopf:hover, .energie-eintrag:hover { background: var(--akzent); }
+.energie-menue { display: flex; flex-direction: column; gap: 0.2rem; }
+.energie-schirm {
+  position: absolute; inset: 0; z-index: 40; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem;
+  background: #111; color: #ddd; font-size: 1.2rem;
+}
+.energie-schirm[hidden] { display: none; }
+.energie-schirm.abmelden { background: var(--welt-dunkel); color: var(--weiss); }
+.anmelde-karte { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+.anmelde-knopf { border: 3px solid var(--weiss); padding: 0.2rem 1rem; }
+
+/* Drucken */
+.druck-wahl { display: flex; gap: 0.6rem; }
+.druck-drucker {
+  position: relative; flex: 1; font: inherit; color: var(--tinte); cursor: pointer; display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.4rem 0.6rem; background: var(--weiss); border: 3px solid var(--grau-text);
+}
+.druck-drucker.gewaehlt { border-color: #1b4fd8; background: #cfe0ff; font-weight: bold; }
+.druck-kopien { position: relative; display: flex; align-items: center; gap: 0.6rem; }
+.druck-zahl { min-width: 1.5rem; text-align: center; font-size: 1.2rem; }
+.druck-ok { position: relative; }
+.sch-meldung {
+  position: absolute; left: 50%; bottom: 1.2rem; transform: translateX(-50%); z-index: 25;
+  padding: 0.4rem 1rem; font-weight: bold; background: #9be07a; border: 3px solid var(--tinte);
+}

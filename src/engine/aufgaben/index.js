@@ -10,6 +10,7 @@ import { editor } from "./editor.js";
 import { desktop } from "./desktop.js";
 import { explorer } from "./explorer.js";
 import { schreiben } from "./schreiben.js";
+import { quiz } from "./quiz.js";
 import { abfolge } from "./abfolge.js";
 
 export const AUFGABENTYPEN = {
@@ -23,5 +24,6 @@ export const AUFGABENTYPEN = {
   desktop,        // Fenster, Taskleiste und Startmenü (Welt 3)
   explorer,       // Dateien und Ordner im Explorer (Welt 4)
   schreiben,      // Textprogramm: Schrift, Farbe, Bild, Speichern (Welt 5)
+  quiz,           // Merkwissen und Sicherheit: Antwort anklicken (Welt 6)
   abfolge,        // mehrere Aufgaben hintereinander (Boss)
 };

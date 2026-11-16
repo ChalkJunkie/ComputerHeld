@@ -3,13 +3,20 @@
    Fenster, Taskleiste und Startmenü – Windows-ähnlich, aber einfach.
    Bisher enthalten: Fenster öffnen, minimieren, vergrößern/verkleinern,
    schließen, nach vorn holen; Taskleiste; Startmenü.
+   Nur wenn ein Level es einschaltet (start.extras):
+     schnell: true  – Schnelleinstellungen rechts in der Taskleiste
+                      (Lautstärke, Stumm, Helligkeit)
+     energie: true  – Ein/Aus-Knopf im Startmenü
+                      (Herunterfahren, Neu starten, Abmelden)
    (Verschieben, Größe ziehen und Dateien kommen erst, wenn ein Level
    sie braucht.)
 
    Alles, was das Kind tut, wird zu einer „Aktion“, z. B.
      { art: "schliessen", programm: "malen" }
    Arten: start-auf, start-zu, oeffnen, minimieren, maximieren,
-          wiederherstellen, schliessen, taskleiste, aktivieren
+          wiederherstellen, schliessen, taskleiste, aktivieren,
+          panel-auf, panel-zu, lautstaerke, stumm, helligkeit,
+          energie-auf, energie-zu, energie (wahl: herunterfahren/neustart/abmelden)
    Bevor eine Aktion wirkt, fragt der Desktop den „Prüfer“ (die Aufgabe).
    Sagt der Prüfer false, passiert nichts.
 
@@ -22,7 +29,15 @@ import { PROGRAMME } from "./programme.js";
 import { erzeugeSprite } from "../engine/sprite-render.js";
 import {
   SYMBOL_START, KNOPF_MINIMIEREN, KNOPF_MAXIMIEREN, KNOPF_WIEDERHERSTELLEN, KNOPF_SCHLIESSEN,
+  SYMBOL_LAUTSPRECHER, SYMBOL_SONNE, SYMBOL_EIN_AUS,
 } from "../../sprites/programme.js";
+
+/* Texte für den Ein/Aus-Knopf und was danach auf dem Bildschirm steht */
+export const ENERGIE = {
+  herunterfahren: { name: "Herunterfahren", bildschirm: "Der Computer ist aus." },
+  neustart: { name: "Neu starten", bildschirm: "Der Computer startet neu …" },
+  abmelden: { name: "Abmelden", bildschirm: "Abgemeldet. Wer möchte sich anmelden?" },
+};
 
 function el(tag, klasse, text) {
   const e = document.createElement(tag);
@@ -66,6 +81,13 @@ export function baueDesktop(container, optionen = {}) {
   let hilfeText = "Hier klicken";
   let programmHandler = [];    // Programme, die eigene Aktionen ausführen
   let markiert = null;         // von der Hilfe hervorgehobenes Element
+  let extras = {};             // { schnell, energie } – siehe oben
+  let panelOffen = false;      // Schnelleinstellungen offen?
+  let energieOffen = false;    // Ein/Aus-Menü offen?
+  let lautstaerke = 50;        // 0 bis 100
+  let stumm = false;
+  let helligkeit = 100;        // 20 bis 100
+  let bildschirm = null;       // nach Ein/Aus: "herunterfahren", "neustart" oder "abmelden"
 
   /* ---------- Aktionen ---------- */
   /* gibt true zurück, wenn die Aktion gewirkt hat */
@@ -95,8 +117,16 @@ export function baueDesktop(container, optionen = {}) {
     const { art, programm: p } = aktion;
     const f = fenster.get(p);
     switch (art) {
-      case "start-auf": startOffen = true; break;
-      case "start-zu": startOffen = false; break;
+      case "start-auf": startOffen = true; panelOffen = false; break;
+      case "start-zu": startOffen = false; energieOffen = false; break;
+      case "panel-auf": panelOffen = true; startOffen = false; break;
+      case "panel-zu": panelOffen = false; break;
+      case "lautstaerke": lautstaerke = aktion.wert; if (lautstaerke > 0) stumm = false; break;
+      case "stumm": stumm = aktion.wert; break;
+      case "helligkeit": helligkeit = aktion.wert; break;
+      case "energie-auf": energieOffen = true; break;
+      case "energie-zu": energieOffen = false; break;
+      case "energie": startOffen = false; energieOffen = false; bildschirm = aktion.wahl; break;
       case "oeffnen":
         startOffen = false;
         if (!fenster.has(p)) erstelleFenster(p, "normal");
@@ -184,9 +214,51 @@ export function baueDesktop(container, optionen = {}) {
   }
   startmenue.append(kachelFeld);
 
-  // Klick daneben schließt das Startmenü
+  // Ein/Aus (nur mit extras.energie)
+  const energieBereich = el("div", "energie-bereich");
+  const energieKnopf = knopf("energie-knopf", "Ein/Aus", erzeugeSprite(SYMBOL_EIN_AUS, { faktor: 2 }), el("span", "", "Ein/Aus"));
+  energieKnopf.addEventListener("click", () => ausloesen({ art: energieOffen ? "energie-zu" : "energie-auf" }));
+  const energieMenue = el("div", "energie-menue");
+  const energieEintraege = {};
+  for (const [wahl, e] of Object.entries(ENERGIE)) {
+    const k = knopf("energie-eintrag", e.name, el("span", "", e.name));
+    k.addEventListener("click", () => ausloesen({ art: "energie", wahl }));
+    energieEintraege[wahl] = k;
+    energieMenue.append(k);
+  }
+  energieBereich.append(energieMenue, energieKnopf);
+  startmenue.append(energieBereich);
+
+  // Schnelleinstellungen (nur mit extras.schnell)
+  const panel = el("div", "schnell-panel");
+  const reglerLaut = el("input", "regler");
+  reglerLaut.type = "range"; reglerLaut.min = 0; reglerLaut.max = 100; reglerLaut.step = 5;
+  reglerLaut.setAttribute("aria-label", "Lautstärke");
+  reglerLaut.addEventListener("input", () => ausloesen({ art: "lautstaerke", wert: Number(reglerLaut.value) }));
+  const stummKnopf = knopf("knopf klein stumm-knopf", "Stumm");
+  stummKnopf.addEventListener("click", () => ausloesen({ art: "stumm", wert: !stumm }));
+  const reglerHell = el("input", "regler");
+  reglerHell.type = "range"; reglerHell.min = 20; reglerHell.max = 100; reglerHell.step = 5;
+  reglerHell.setAttribute("aria-label", "Helligkeit");
+  reglerHell.addEventListener("input", () => ausloesen({ art: "helligkeit", wert: Number(reglerHell.value) }));
+  const zeileLaut = el("div", "schnell-zeile");
+  zeileLaut.append(el("span", "schnell-name", "Lautstärke"), reglerLaut, el("span", "schnell-wert"), stummKnopf);
+  const zeileHell = el("div", "schnell-zeile");
+  zeileHell.append(el("span", "schnell-name", "Helligkeit"), reglerHell, el("span", "schnell-wert"));
+  panel.append(zeileLaut, zeileHell);
+  wurzel.append(panel);
+  const schnellKnopf = knopf("task-knopf schnell-knopf", "Schnelleinstellungen");
+  schnellKnopf.addEventListener("click", () => ausloesen({ art: panelOffen ? "panel-zu" : "panel-auf" }));
+
+  // Dunkler Schleier für die Helligkeit und Bildschirm nach Ein/Aus
+  const schleier = el("div", "helligkeit-schleier");
+  const schirm = el("div", "energie-schirm");
+  wurzel.append(schleier, schirm);
+
+  // Klick daneben schließt Startmenü und Schnelleinstellungen
   flaeche.addEventListener("mousedown", () => {
     if (startOffen) ausloesen({ art: "start-zu" });
+    if (panelOffen) ausloesen({ art: "panel-zu" });
   });
 
   /* ---------- Taskleiste ---------- */
@@ -209,6 +281,31 @@ export function baueDesktop(container, optionen = {}) {
 
     startmenue.hidden = !startOffen;
     startKnopf.classList.toggle("aktiv", startOffen);
+    energieBereich.hidden = !extras.energie;
+    energieMenue.hidden = !energieOffen;
+
+    // Schnelleinstellungen
+    panel.hidden = !extras.schnell || !panelOffen;
+    reglerLaut.value = stumm ? 0 : lautstaerke;
+    reglerHell.value = helligkeit;
+    zeileLaut.querySelector(".schnell-wert").textContent = stumm ? "stumm" : lautstaerke;
+    zeileHell.querySelector(".schnell-wert").textContent = helligkeit;
+    stummKnopf.textContent = stumm ? "Ton an" : "Stumm";
+    schnellKnopf.classList.toggle("aktiv", panelOffen);
+    const lautsprecher = erzeugeSprite(SYMBOL_LAUTSPRECHER, { faktor: 2 });
+    if (stumm || lautstaerke === 0) lautsprecher.classList.add("durchgestrichen");
+    schnellKnopf.replaceChildren(lautsprecher, erzeugeSprite(SYMBOL_SONNE, { faktor: 2 }));
+    schleier.style.opacity = ((100 - helligkeit) / 100) * 0.85;
+    schirm.hidden = !bildschirm;
+    if (bildschirm) {
+      schirm.className = "energie-schirm " + bildschirm;
+      schirm.replaceChildren(el("p", "", ENERGIE[bildschirm].bildschirm));
+      if (bildschirm === "abmelden") {
+        const anmelden = el("div", "anmelde-karte");
+        anmelden.append(erzeugeSprite(SYMBOL_START, { faktor: 4 }), el("strong", "", "Klasse 5"), el("span", "anmelde-knopf", "Anmelden"));
+        schirm.append(anmelden);
+      }
+    }
 
     taskleiste.replaceChildren(startKnopf);
     for (const p of geoeffnet) {
@@ -220,6 +317,7 @@ export function baueDesktop(container, optionen = {}) {
       taskKnoepfe[p].classList.toggle("aktiv", p === aktiv);
       taskleiste.append(taskKnoepfe[p]);
     }
+    if (extras.schnell) taskleiste.append(schnellKnopf);
 
     // Hilfe: Stelle zum Klicken hervorheben (nur die eigene Markierung
     // entfernen – Programme wie der Explorer markieren selbst)
@@ -232,8 +330,9 @@ export function baueDesktop(container, optionen = {}) {
     if (ziel) {
       ziel.classList.add("mit-hilfe");
       const schild = el("span", "desktop-schild", hilfeText);
-      // bei Fensterknöpfen unter dem Knopf, sonst darüber
+      // bei Fensterknöpfen unter dem Knopf, bei Reglern links daneben, sonst darüber
       if (ziel.classList.contains("fenster-knopf")) schild.classList.add("unten");
+      if (ziel.classList.contains("schnell-zeile")) schild.classList.add("links");
       ziel.append(schild);
     }
   }
@@ -250,6 +349,15 @@ export function baueDesktop(container, optionen = {}) {
       case "maximieren": case "wiederherstellen": return f && f.knoepfe.groesse;
       case "schliessen": return f && f.knoepfe.schliessen;
       case "aktivieren": return f && f.element;
+      case "panel-auf": case "panel-zu": return schnellKnopf;
+      case "lautstaerke": case "stumm": case "helligkeit":
+        if (!panelOffen) return schnellKnopf;
+        if (art === "stumm") return stummKnopf;
+        return art === "lautstaerke" ? zeileLaut : zeileHell;
+      case "energie-auf": case "energie-zu": return energieKnopf;
+      case "energie":
+        if (!startOffen) return startKnopf;
+        return energieOffen ? energieEintraege[aktion.wahl] : energieKnopf;
       default: return null;
     }
   }
@@ -267,6 +375,13 @@ export function baueDesktop(container, optionen = {}) {
       geoeffnet = [];
       programmHandler = [];
       startOffen = false;
+      extras = start.extras || {};
+      panelOffen = false;
+      energieOffen = false;
+      bildschirm = null;
+      lautstaerke = start.lautstaerke ?? 50;
+      stumm = start.stumm ?? false;
+      helligkeit = start.helligkeit ?? 100;
       for (const { programm, zustand = "normal" } of start.offen || []) erstelleFenster(programm, zustand, start.kontext);
       aktiv = start.aktiv || vorderstesSichtbares(null);
       if (aktiv) aktiviere(aktiv);
@@ -277,6 +392,8 @@ export function baueDesktop(container, optionen = {}) {
     elementFuer,
 
     /* Ist dieses Fenster gerade vorn und sichtbar? */
+    get einstellungen() { return { lautstaerke, stumm, helligkeit, panelOffen, startOffen, energieOffen }; },
+
     istVorn(p) {
       return aktiv === p && fenster.has(p) && fenster.get(p).zustand !== "minimiert";
     },
