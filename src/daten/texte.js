@@ -13,7 +13,7 @@ export const TEXTE = {
   nachDemUeben: "Gut gemacht! Jetzt schaffst du es auch ohne Hilfe.",
   keineHilfeMehr: "Mehr Tipps habe ich nicht. Du schaffst das!",
   geschafft: "Geschafft! Du hast das Level gemeistert.",
-  mehrSterne: "Mit weniger Fehlern und etwas mehr Tempo gibt es noch mehr Sterne.",
+  mehrSterne: "Geschafft! Mit weniger Fehlern und etwas mehr Tempo gibt es noch mehr Sterne.",
   alleSterne: "Drei Sterne! Besser geht es nicht.",
 };
 

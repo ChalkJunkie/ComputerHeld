@@ -105,53 +105,80 @@ canvas.sprite { image-rendering: pixelated; display: block; flex: none; }
 .sprechblase p:last-child { margin-bottom: 0; }
 .hinweis { font-weight: bold; color: var(--achtung); }
 
+/* ---------------- Landschaft im Hintergrund ---------------- */
+.landschaft { position: absolute; inset: 0; overflow: hidden; pointer-events: none; background: #cfeaf7; }
+.landschaft canvas { position: absolute; image-rendering: pixelated; }
+.landschaft-boden { position: absolute; left: 0; right: 0; bottom: 0; background-repeat: repeat-x; image-rendering: pixelated; }
+
+/* Sprechblase mit Zipfel, der nach links zu Bit zeigt */
+.sprechblase.mit-zipfel { position: relative; }
+.sprechblase .zipfel { position: absolute; left: -24px; top: 50%; transform: translateY(-50%); image-rendering: pixelated; }
+
 /* ---------------- Start ---------------- */
-.start { align-items: center; justify-content: center; gap: 1rem; text-align: center; }
-.titel { font-size: 2.2rem; }
-.untertitel { font-size: 1.1rem; }
-.start-mitte { display: flex; align-items: center; gap: 1.2rem; text-align: left; }
-.start-mitte .sprechblase { max-width: 24rem; }
+.start { position: relative; padding: 0; overflow: hidden; background: #bfe3f7; }
+.start .landschaft { background: #bfe3f7; }
+.start-inhalt {
+  position: relative; flex: 1; display: flex; flex-direction: column; align-items: center;
+  padding: 2.2rem 1.4rem 0; gap: 0.6rem;
+}
+.titel {
+  font-size: 3.2rem; color: var(--weiss); letter-spacing: 2px; margin: 0;
+  /* dunkler Pixelrand um die weißen Buchstaben */
+  text-shadow: 5px 5px 0 var(--tinte), -3px 0 0 var(--tinte), 3px 0 0 var(--tinte), 0 -3px 0 var(--tinte),
+    0 3px 0 var(--tinte), -3px -3px 0 var(--tinte), 3px -3px 0 var(--tinte), -3px 3px 0 var(--tinte);
+}
+.untertitel {
+  font-size: 1.1rem; font-weight: bold; padding: 0.2rem 0.8rem;
+  background: var(--weiss); border: var(--rahmen) solid var(--tinte);
+}
+.start-mitte { display: flex; align-items: flex-end; gap: 2.6rem; margin-top: auto; padding-bottom: 92px; }
+.start-rechts { display: flex; flex-direction: column; gap: 1.2rem; max-width: 34rem; padding-bottom: 1.5rem; }
+.start-knoepfe { margin-left: 0.4rem; }
 
 /* ---------------- Weltkarte ---------------- */
+.karte { gap: 0.4rem; }
+.karte .kopf { flex-wrap: wrap; row-gap: 0.4rem; }
 .kartenfeld {
-  flex: 1;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: 1fr 3rem 2.2fr 3rem 1fr;
-  align-items: center;
-}
-.welt-gruppe { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
-/* Der Weg zwischen den Welten: eine Reihe kleiner Trittsteine */
-.weg { height: 12px; background: repeating-linear-gradient(90deg, var(--tinte) 0 12px, transparent 12px 20px); }
-.welt-kachel {
-  font: inherit;
-  color: var(--tinte);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.4rem;
-  padding: 0.8rem;
-  min-height: 6.5rem;
-  text-align: left;
-  background: var(--welt-mittel);
+  position: relative; flex: 1; min-height: 0; overflow: hidden;
+  background: linear-gradient(#bfe3f7 0 16%, #8fcf5a 16% 17.2%, #b7e08a 17.2%);
   border: var(--rahmen) solid var(--tinte);
-  /* unten ein dunkler Streifen wie eine Blockkante */
-  box-shadow: inset 0 -12px 0 var(--welt-dunkel), 4px 4px 0 var(--tinte);
-  padding-bottom: 1.2rem;
-  cursor: pointer;
 }
-.welt-kachel:hover:not(:disabled) { background: var(--welt-hell); }
-.welt-nummer { font-size: 0.6rem; }
-.welt-name { font-size: 0.8rem; }
-.welt-kachel.gesperrt, .level-kachel.gesperrt {
-  background: var(--grau);
-  color: var(--grau-text);
-  box-shadow: 4px 4px 0 var(--grau-text);
-  border-color: var(--grau-text);
-  cursor: default;
+.kartenfeld .landschaft { background: transparent; }
+.kartenfeld .landschaft canvas:last-child { opacity: 0.95; }
+.karten-baum, .karten-bit { position: absolute; image-rendering: pixelated; }
+.karten-baum canvas { display: block; }
+/* Trittsteine zwischen den Welten */
+.trittstein {
+  position: absolute; width: 14px; height: 9px; transform: translate(-50%, -50%);
+  background: #efe3c6; border: 3px solid var(--tinte);
 }
-.sperrtext { font-size: 0.8rem; }
-.kartenhinweis { text-align: center; flex: none; }
+.welt-ort {
+  position: absolute; transform: translate(-50%, -50%); width: 9.5rem;
+  display: flex; flex-direction: column; align-items: center; gap: 0.25rem;
+  font: inherit; color: var(--tinte); background: none; border: none; padding: 0; cursor: pointer;
+}
+.welt-symbol { image-rendering: pixelated; margin-bottom: -12px; position: relative; z-index: 2; }
+.welt-block {
+  position: relative; width: 100%; height: 2.6rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  background: var(--welt-mittel); border: var(--rahmen) solid var(--tinte);
+  box-shadow: inset 0 -14px 0 var(--welt-dunkel), 4px 4px 0 var(--tinte);
+}
+.welt-ort:hover:not(:disabled) .welt-block, .welt-ort:focus-visible .welt-block { background: var(--welt-hell); }
+.welt-ort:focus-visible { outline: 4px solid #1b4fd8; outline-offset: 4px; }
+.welt-schild {
+  white-space: nowrap; font-size: 0.6rem; padding: 0.3rem 0.5rem;
+  background: var(--weiss); border: var(--rahmen) solid var(--tinte);
+}
+.welt-ort .sternzaehler { background: rgba(255, 255, 255, 0.75); padding: 0 0.3rem; }
+.welt-ort.gesperrt { cursor: default; }
+.welt-ort.gesperrt .welt-symbol { filter: grayscale(1); opacity: 0.5; }
+.welt-ort.gesperrt .welt-block { background: #d6cfbf; box-shadow: inset 0 -14px 0 #a39a88, 4px 4px 0 var(--tinte); }
+.sperrtext { font-size: 0.8rem; font-weight: bold; background: rgba(255, 255, 255, 0.75); padding: 0 0.3rem; }
+/* Edelsteine oben in der Kopfzeile */
+.inventar { display: flex; align-items: center; gap: 0.35rem; font-weight: bold; background: var(--weiss); border: var(--rahmen) solid var(--tinte); padding: 0.2rem 0.5rem; }
+.inventar-fach { width: 2.1rem; height: 1.9rem; display: flex; align-items: center; justify-content: center; background: #e9e4d8; border: 3px solid var(--tinte); }
+.speichern-knopf { background: #9be07a; }
+.karten-meldung { min-height: 1.4rem; font-weight: bold; color: var(--gut); text-align: right; flex: none; }
 
 /* ---------------- Welt: Level-Übersicht ---------------- */
 .welt { background: var(--welt-hell); }
@@ -171,32 +198,40 @@ canvas.sprite { image-rendering: pixelated; display: block; flex: none; }
   cursor: pointer;
 }
 .level-kachel:hover:not(:disabled) { background: var(--akzent); }
+.level-kachel.gesperrt {
+  background: var(--grau); color: var(--grau-text);
+  box-shadow: 4px 4px 0 var(--grau-text); border-color: var(--grau-text); cursor: default;
+}
 .level-kachel.boss:not(.gesperrt) { background: var(--welt-mittel); }
 .level-nummer { font-size: 0.7rem; }
 .level-titel { flex: 1; }
 
 /* ---------------- Level ---------------- */
 .level { gap: 0.5rem; overflow: hidden; }
-.phasen { display: flex; gap: 0.4rem; list-style: none; margin: 0; padding: 0; font-size: 0.8rem; }
-.phasen li { padding: 0.2rem 0.6rem; border: 3px solid var(--grau-text); color: var(--grau-text); background: var(--papier); }
-.phasen li.erledigt { border-color: var(--tinte); color: var(--tinte); background: var(--grau); }
-.phasen li.aktiv { border-color: var(--tinte); color: var(--weiss); background: var(--tinte); font-weight: bold; }
+/* Phasen als Kette: ✔ Zeigen – ✔ Üben – Anwenden – Sterne */
+.phasen { display: flex; align-items: center; list-style: none; margin: 0; padding: 0; font-size: 0.8rem; }
+.phasen li { padding: 0.2rem 0.6rem; border: 3px solid var(--tinte); color: var(--tinte); background: var(--papier); }
+.phasen li + li { margin-left: 16px; position: relative; }
+.phasen li + li::before { content: ""; position: absolute; left: -19px; top: 50%; width: 16px; height: 5px; margin-top: -2px; background: var(--tinte); }
+.phasen li.erledigt { background: #9be07a; }
+.phasen li.erledigt::after { content: " ✔"; }
+.phasen li.aktiv { color: var(--weiss); background: var(--tinte); font-weight: bold; }
 
-.spielflaeche {
-  flex: 1;
-  min-height: 0;
-  position: relative;
-  overflow: hidden;
-  background: var(--welt-hell);
+/* Spielfläche liegt auf der Landschaft */
+.flaeche-rahmen {
+  flex: 1; min-height: 0; position: relative; overflow: hidden;
   border: var(--rahmen) solid var(--tinte);
-  /* unten ein Streifen „Boden“ in der Farbe der Welt */
-  box-shadow: inset 0 -16px 0 var(--welt-mittel);
 }
+.spielflaeche { position: absolute; inset: 0; overflow: hidden; }
 .bit-leiste { flex: none; display: flex; align-items: flex-end; gap: 0.8rem; min-height: 128px; }
 .bit-leiste .sprechblase { flex: 1; display: flex; align-items: center; gap: 1rem; min-height: 5.5rem; }
 .blasentext { flex: 1; }
 .blasenknoepfe { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: flex-end; }
-.zaehler { font-size: 0.9rem; min-width: 5rem; text-align: right; align-self: center; }
+.bit-leiste .sprechblase { margin-left: 1rem; }
+.zaehler { width: 16rem; align-self: center; flex: none; }
+.zaehler-steine { display: flex; flex-wrap: wrap; gap: 3px; }
+.zaehler-steine canvas { image-rendering: pixelated; }
+.zaehler-text { font-weight: bold; font-size: 0.8rem; margin-top: 0.2rem; }
 
 /* Spielfläche und (nur beim Zeigen und Üben) die Hilfe-Tafel daneben */
 .spielbereich { flex: 1; min-height: 0; display: flex; gap: 0.6rem; }
@@ -292,27 +327,35 @@ canvas.sprite { image-rendering: pixelated; display: block; flex: none; }
 .greifbar { cursor: grab; z-index: 2; }
 .greifbar.gegriffen { cursor: grabbing; }
 
-/* Auswertung */
+/* Auswertung: großer Bit, Siegertreppchen mit Sternen, Karte mit Ergebnis */
 .auswertung {
-  position: absolute; inset: 0;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.8rem;
+  position: absolute; inset: 0 0 48px 0;
+  display: flex; align-items: flex-end; justify-content: center; gap: 3rem;
 }
-.sternreihe { display: flex; gap: 1rem; }
+.auswertung canvas { image-rendering: pixelated; display: block; }
+.treppchen { display: flex; align-items: flex-end; gap: 1rem; }
+.podest { display: flex; flex-direction: column; align-items: center; }
+.sockel {
+  width: 128px; box-sizing: border-box; margin-top: -6px;
+  background: #f7e4bc; border: var(--rahmen) solid var(--tinte); box-shadow: inset 0 -12px 0 #d9b98a;
+}
+.podest-1 .sockel { height: 110px; }
+.podest-2 .sockel, .podest-3 .sockel { height: 70px; }
+.auswertung-karte {
+  align-self: center; min-width: 15rem; padding: 0.6rem 1rem; line-height: 1.6;
+  background: var(--weiss); border: var(--rahmen) solid var(--tinte); box-shadow: 4px 4px 0 var(--tinte);
+}
+.auswertung-karte p { margin: 0; }
+.auswertung-karte strong { display: block; font-size: 0.8rem; margin-bottom: 0.3rem; }
+.auswertung-stein { display: flex; align-items: center; gap: 0.5rem; font-weight: bold; }
+.knopf.gross-gruen { background: #9be07a; }
+.knopf.gross-gruen:hover { background: #c1f0a8; }
 
 /* ---------------- Einstellungen ---------------- */
 .einstellungs-spalten { display: grid; grid-template-columns: 1fr 1.4fr; gap: 2rem; }
 .auswahl { border: none; margin: 0 0 1rem; padding: 0; display: flex; flex-wrap: wrap; gap: 0.6rem; }
 .auswahl legend { font-weight: bold; margin-bottom: 0.4rem; padding: 0; }
 .klein-text { font-size: 0.85rem; color: var(--grau-text); }
-.code-anzeige {
-  display: block; font-size: 1rem; letter-spacing: 0.05em;
-  background: var(--weiss); border: var(--rahmen) solid var(--tinte);
-  padding: 0.7rem; margin-bottom: 0.8rem; user-select: all; overflow-wrap: anywhere;
-}
-.code-eingabe {
-  font-family: "Courier New", monospace; font-size: 1.1rem; font-weight: bold;
-  padding: 0.5rem; border: var(--rahmen) solid var(--tinte); width: 16rem; text-transform: uppercase;
-}
 .meldung { min-height: 1.5rem; font-weight: bold; margin-top: 0.5rem; }
 .meldung.gut { color: var(--gut); }
 .meldung.achtung { color: var(--achtung); }

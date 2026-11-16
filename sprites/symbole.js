@@ -179,6 +179,8 @@ export const EDELSTEIN = {
     gruen: { ...EDELSTEIN_ROT, H: { name: "Hell", farbe: "#c4f5b0" }, B: { name: "Fläche", farbe: "#3fae3a" }, D: { name: "Dunkel", farbe: "#1f6b22" } },
     gelb:  { ...EDELSTEIN_ROT, H: { name: "Hell", farbe: "#fff2a8" }, B: { name: "Fläche", farbe: "#f0c419" }, D: { name: "Dunkel", farbe: "#a07a00" } },
     lila:  { ...EDELSTEIN_ROT, H: { name: "Hell", farbe: "#e6c4ff" }, B: { name: "Fläche", farbe: "#9b4fd6" }, D: { name: "Dunkel", farbe: "#5c2390" } },
+    diamant: { ...EDELSTEIN_ROT, H: { name: "Hell", farbe: "#ffffff" }, B: { name: "Fläche", farbe: "#bfe9ff" }, D: { name: "Dunkel", farbe: "#6fb8d9" } },
+    leer:  { K: { name: "Umriss", farbe: "#8c8273" }, H: { name: "Leer", farbe: "#e9e4d8" }, B: { name: "Leer", farbe: "#e9e4d8" }, D: { name: "Leer", farbe: "#d6cfbf" } },
   },
   basis: [
     "...KKKKKK...",
@@ -315,5 +317,20 @@ export const SCHLOSS = {
     "KYYYYYKYYYYK",
     "KDDDDDDDDDDK",
     "KKKKKKKKKKKK",
+  ],
+};
+
+// --- Zipfel der Sprechblase (6 x 7), zeigt nach links zu Bit -----------
+export const ZIPFEL = {
+  breite: 6, hoehe: 7,
+  palette: { K: { name: "Umriss", farbe: "#2e1c12" }, W: { name: "Weiß", farbe: "#ffffff" } },
+  basis: [
+    ".....K",
+    "...KKW",
+    ".KKWWW",
+    "KWWWWW",
+    ".KKWWW",
+    "...KKW",
+    ".....K",
   ],
 };

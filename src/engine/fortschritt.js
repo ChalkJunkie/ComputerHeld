@@ -1,9 +1,11 @@
 /* =====================================================================
-   FORTSCHRITT: Sterne, Freischaltungen, Einstellungen, Spielstand-Code
+   FORTSCHRITT: Sterne, Freischaltungen, Einstellungen, Spielstand-Datei
    =====================================================================
    Alles wird nur im Browser dieses Rechners gespeichert (localStorage).
    Es gibt keine Konten und es werden keine Daten verschickt.
-   Der Spielstand-Code ist das Backup, falls der Rechner zurückgesetzt wird.
+   Als Sicherung kann man den Spielstand als Datei herunterladen
+   („Spielstand-ComputerHeld-2026-11-16.json“) und später wieder laden –
+   auch an einem anderen Computer.
    ===================================================================== */
 
 import { WELTEN } from "../daten/welten.js";
@@ -17,7 +19,7 @@ let stand = neuerStand();
 function neuerStand() {
   return {
     sterne: {},
-    einstellungen: { ton: false, schrift: "normal" },
+    einstellungen: { schrift: "normal" },
   };
 }
 
@@ -30,7 +32,7 @@ export function lade() {
       const gelesen = JSON.parse(text);
       stand = neuerStand();
       Object.assign(stand.sterne, gelesen.sterne);
-      Object.assign(stand.einstellungen, gelesen.einstellungen);
+      if (gelesen.einstellungen && gelesen.einstellungen.schrift) stand.einstellungen.schrift = gelesen.einstellungen.schrift;
     }
   } catch (fehler) {
     // Speicher gesperrt oder kaputt: Wir spielen einfach ohne Speichern weiter.
@@ -46,6 +48,12 @@ function speichere() {
   }
 }
 
+/* Gibt es schon Sterne? (Dann bietet die Startseite „Weiterspielen“ an.) */
+export function hatFortschritt() {
+  return Object.keys(stand.sterne).length > 0;
+}
+
+/* Neues Abenteuer: alle Sterne weg, die Einstellungen bleiben */
 export function loescheAlles() {
   const einstellungen = stand.einstellungen; // Einstellungen bleiben erhalten
   stand = neuerStand();
@@ -114,84 +122,49 @@ export function setzeEinstellung(name, wert) {
 }
 
 /* =====================================================================
-   SPIELSTAND-CODE
-   Der Code enthält nur die Sterne aller Level, sonst nichts.
-   Aufbau: Version – Sterne (2 Bit pro Level, 16 Plätze pro Welt) – Prüfzahl.
-   Zeichen, die man leicht verwechselt (I, O, 0, 1), kommen nicht vor.
+   SPIELSTAND-DATEI
+   Die Datei enthält nur die Sterne und die Schriftgröße – keine Namen,
+   keine persönlichen Daten. Beispiel:
+   { "spiel": "ComputerHeld", "version": 1, "gespeichert": "2026-11-16",
+     "sterne": { "1.1": 3, "1.2": 2 }, "einstellungen": { "schrift": "normal" } }
    ===================================================================== */
 
-const ZEICHEN = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // 32 Zeichen = 5 Bit pro Zeichen
-const CODE_VERSION = 1;
-const PLAETZE_PRO_WELT = 16;
+const ALLE_LEVEL = new Set(WELTEN.flatMap((w) => w.level.map((l) => l.id)));
 
-function pruefzahl(bytes) {
-  let summe = 7;
-  bytes.forEach((b, i) => { summe = (summe + (b + 1) * (i + 3)) % 256; });
-  return summe;
+/* Liefert Dateiname und Inhalt zum Herunterladen */
+export function alsDatei() {
+  const heute = new Date();
+  const datum = [heute.getFullYear(), String(heute.getMonth() + 1).padStart(2, "0"), String(heute.getDate()).padStart(2, "0")].join("-");
+  const inhalt = {
+    spiel: "ComputerHeld",
+    version: 1,
+    gespeichert: datum,
+    sterne: stand.sterne,
+    einstellungen: stand.einstellungen,
+  };
+  return { dateiname: `Spielstand-ComputerHeld-${datum}.json`, text: JSON.stringify(inhalt, null, 2) };
 }
 
-export function erzeugeCode() {
-  // 1. Sterne aller Level in fester Reihenfolge aufreihen
-  const sterne = [];
-  WELTEN.forEach((welt, w) => {
-    for (let i = 0; i < PLAETZE_PRO_WELT; i++) {
-      const eintrag = welt.level[i];
-      sterne[w * PLAETZE_PRO_WELT + i] = eintrag ? sterneVon(eintrag.id) : 0;
-    }
-  });
-  // 2. Je vier Level in ein Byte packen
-  const daten = [];
-  for (let i = 0; i < sterne.length; i += 4) {
-    daten.push(sterne[i] | (sterne[i + 1] << 2) | (sterne[i + 2] << 4) | (sterne[i + 3] << 6));
-  }
-  // 3. Leere Bytes am Ende weglassen – so bleibt der Code am Anfang schön kurz
-  while (daten.length > 0 && daten[daten.length - 1] === 0) daten.pop();
-  const bytes = [CODE_VERSION, ...daten];
-  bytes.push(pruefzahl(bytes));
-  // 4. Bytes in Buchstaben und Ziffern umwandeln (immer 5 Bit pro Zeichen)
-  let bits = "";
-  for (const b of bytes) bits += b.toString(2).padStart(8, "0");
-  while (bits.length % 5 !== 0) bits += "0";
-  let code = "";
-  for (let i = 0; i < bits.length; i += 5) code += ZEICHEN[parseInt(bits.slice(i, i + 5), 2)];
-  // 5. In Vierergruppen aufteilen, damit man ihn gut abschreiben kann
-  return code.match(/.{1,4}/g).join("-");
-}
-
-/* Liest einen Code ein. Vorhandene Sterne gehen dabei nie verloren:
-   Es zählt pro Level das bessere Ergebnis.
+/* Liest eine Spielstand-Datei. Der Spielstand auf diesem Rechner wird dabei
+   ERSETZT (wichtig an Schulrechnern, an denen mehrere Kinder spielen).
    Rückgabe: { ok: true } oder { ok: false, meldung: "..." } */
-export function leseCode(eingabe) {
-  const text = eingabe.toUpperCase().replace(/[\s-]/g, "");
-  if (text.length === 0) return { ok: false, meldung: "Bitte gib zuerst deinen Code ein." };
-
-  let bits = "";
-  for (const zeichen of text) {
-    const wert = ZEICHEN.indexOf(zeichen);
-    if (wert < 0) {
-      return { ok: false, meldung: `Das Zeichen „${zeichen}“ kommt im Code nicht vor. Schau noch einmal genau hin.` };
-    }
-    bits += wert.toString(2).padStart(5, "0");
+export function ausDatei(text) {
+  const keineDatei = { ok: false, meldung: "Das ist keine Spielstand-Datei von ComputerHeld. Such die Datei, die mit „Spielstand-ComputerHeld“ anfängt." };
+  let gelesen;
+  try {
+    gelesen = JSON.parse(text);
+  } catch (fehler) {
+    return keineDatei;
   }
-  const bytes = [];
-  for (let i = 0; i + 8 <= bits.length; i += 8) bytes.push(parseInt(bits.slice(i, i + 8), 2));
-
-  const tippfehler = { ok: false, meldung: "Der Code stimmt noch nicht ganz. Vergleiche ihn Zeichen für Zeichen." };
-  if (bytes.length < 2) return tippfehler;
-  const pruef = bytes.pop();
-  if (pruef !== pruefzahl(bytes)) return tippfehler;
-  if (bytes[0] !== CODE_VERSION) return { ok: false, meldung: "Dieser Code passt nicht zu dieser Version des Spiels." };
-
-  const daten = bytes.slice(1);
-  WELTEN.forEach((welt, w) => {
-    welt.level.forEach((eintrag, i) => {
-      if (i >= PLAETZE_PRO_WELT) return;
-      const platz = w * PLAETZE_PRO_WELT + i;
-      const byte = daten[Math.floor(platz / 4)] || 0;
-      const sterne = (byte >> ((platz % 4) * 2)) & 3;
-      if (sterne > sterneVon(eintrag.id)) stand.sterne[eintrag.id] = sterne;
-    });
-  });
+  if (!gelesen || gelesen.spiel !== "ComputerHeld" || typeof gelesen.sterne !== "object" || !gelesen.sterne) return keineDatei;
+  const sterne = {};
+  for (const [id, anzahl] of Object.entries(gelesen.sterne)) {
+    // nur bekannte Level und 1 bis 3 Sterne übernehmen
+    if (ALLE_LEVEL.has(id) && [1, 2, 3].includes(anzahl)) sterne[id] = anzahl;
+  }
+  stand.sterne = sterne;
+  const schrift = gelesen.einstellungen && gelesen.einstellungen.schrift;
+  if (["normal", "gross", "sehrgross"].includes(schrift)) stand.einstellungen.schrift = schrift;
   speichere();
   return { ok: true };
 }

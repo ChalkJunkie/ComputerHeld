@@ -13,7 +13,8 @@
    ===================================================================== */
 
 import { BIT } from "../../sprites/bit.js";
-import { STERN } from "../../sprites/symbole.js";
+import { STERN, EDELSTEIN, ZIPFEL } from "../../sprites/symbole.js";
+import { baueLandschaft } from "./landschaft.js";
 import { erzeugeSprite } from "./sprite-render.js";
 import { AUFGABENTYPEN } from "./aufgaben/index.js";
 import { TEXTE, FEHLER_BIS_HILFE } from "../daten/texte.js";
@@ -52,15 +53,17 @@ export function starteLevel(wurzel, level, optionen) {
     <header class="kopf">
       <button class="knopf klein" type="button" data-zurueck>Zurück</button>
       <h1 class="pixel"></h1>
-      <ol class="phasen">${PHASEN.map((p, i) => `<li>${i + 1} ${p}</li>`).join("")}</ol>
+      <ol class="phasen">${PHASEN.map((p) => `<li>${p}</li>`).join("")}</ol>
     </header>
     <div class="spielbereich">
-      <div class="spielflaeche"></div>
+      <div class="flaeche-rahmen">
+        <div class="spielflaeche"></div>
+      </div>
       <aside class="hilfe-tafel" hidden></aside>
     </div>
     <footer class="bit-leiste">
       <div class="bit"></div>
-      <div class="sprechblase">
+      <div class="sprechblase mit-zipfel">
         <div class="blasentext" aria-live="polite">
           <div class="ansage"></div>
           <p class="rueckmeldung"></p>
@@ -79,6 +82,34 @@ export function starteLevel(wurzel, level, optionen) {
   const zaehler = wurzel.querySelector(".zaehler");
   wurzel.querySelector("[data-zurueck]").addEventListener("click", optionen.beiZurueck);
 
+  // Landschaft hinter der Spielfläche (Hügel in den Farben der Welt)
+  wurzel.querySelector(".flaeche-rahmen").prepend(baueLandschaft({
+    welt: optionen.welt,
+    boden: 3,
+    wolken: [{ x: 8, y: 6, faktor: 5 }, { x: 60, y: 12, faktor: 6 }, { x: 86, y: 4, faktor: 4 }],
+    huegel: [{ x: -4, faktor: 5, klein: true }, { x: 58, faktor: 6 }],
+    baeume: [{ x: 3, faktor: 4 }, { x: 90, faktor: 5 }],
+  }));
+  const zipfel = erzeugeSprite(ZIPFEL, { faktor: 4 });
+  zipfel.classList.add("zipfel");
+  wurzel.querySelector(".bit-leiste .sprechblase").prepend(zipfel);
+
+  /* Zähler: für jede geschaffte Runde leuchtet ein Edelstein auf */
+  const steinFarbe = (optionen.welt && optionen.welt.edelstein) || "gruen";
+  function zeigeZaehler(geschafft, gesamt) {
+    zaehler.dataset.geschafft = geschafft;
+    zaehler.dataset.gesamt = gesamt;
+    const steine = document.createElement("div");
+    steine.className = "zaehler-steine";
+    for (let i = 0; i < gesamt; i++) {
+      steine.append(erzeugeSprite(EDELSTEIN, { faktor: 2, palette: EDELSTEIN.paletten[i < geschafft ? steinFarbe : "leer"] }));
+    }
+    const text = document.createElement("div");
+    text.className = "zaehler-text";
+    text.textContent = `${geschafft} von ${gesamt} geschafft`;
+    zaehler.replaceChildren(steine, text);
+  }
+
   // Im Spielbereich soll nie das Menü des Browsers aufgehen
   flaeche.addEventListener("contextmenu", (e) => e.preventDefault());
 
@@ -90,9 +121,9 @@ export function starteLevel(wurzel, level, optionen) {
     clearTimeout(poseTimer);
     bitFeld.replaceChildren(erzeugeSprite(BIT, { pose, faktor: 4 }));
   }
-  function bitKurz(pose) { // Pose kurz zeigen, dann wieder normal stehen
+  function bitKurz(pose) { // Pose kurz zeigen, dann wieder auf die Sprechblase zeigen
     setzeBit(pose);
-    poseTimer = setTimeout(() => setzeBit("stehend"), 1200);
+    poseTimer = setTimeout(() => setzeBit("zeigend"), 1200);
   }
   /* sage(): der eigentliche Auftrag – bleibt stehen, bis ein neuer kommt.
      melde(): kurze Rückmeldung darunter (Lob, Trost, Tipp). */
@@ -134,7 +165,9 @@ export function starteLevel(wurzel, level, optionen) {
     flaeche.replaceChildren();
     tafel.replaceChildren();
     tafel.hidden = !mitTafel;
-    zaehler.textContent = "";
+    zaehler.replaceChildren();
+    delete zaehler.dataset.geschafft;
+    delete zaehler.dataset.gesamt;
   }
 
   /* ---------- Hilfe in Stufen ---------- */
@@ -146,14 +179,14 @@ export function starteLevel(wurzel, level, optionen) {
     } else {
       melde(TEXTE.keineHilfeMehr);
     }
-    setzeBit("winkend");
+    setzeBit("nachdenklich");
   }
 
   /* ---------- Phase 1: Zeigen ---------- */
   function phaseZeigen() {
     raeumeAuf(true);
     setzePhase(0);
-    setzeBit("winkend");
+    setzeBit("zeigend");
     sage(level.erklaerung);
     laufend = typ.zeigeDemo(flaeche, tafel, level.gefuehrt || level.selbst);
     knoepfe(["Los geht's!", level.gefuehrt ? phaseUeben : phaseAnwenden]);
@@ -162,7 +195,7 @@ export function starteLevel(wurzel, level, optionen) {
   /* ---------- Phase 2 und 3: Aufgabe mit oder ohne Hilfe ---------- */
   function starteAufgabe({ mitHilfe, einstellungen, beiFertig }) {
     raeumeAuf(mitHilfe);
-    setzeBit("stehend");
+    setzeBit("zeigend");
     sage(level.aufgabe);
     knoepfe(["Tipp von Bit", zeigeHilfe]);
 
@@ -170,7 +203,7 @@ export function starteLevel(wurzel, level, optionen) {
     let fehlerInFolge = 0;
     const startzeit = performance.now();
     const runden = typ.anzahlRunden ? typ.anzahlRunden(einstellungen) : einstellungen.runden;
-    zaehler.textContent = `0 / ${runden}`;
+    zeigeZaehler(0, runden);
 
     laufend = typ.starte({
       flaeche,
@@ -179,10 +212,10 @@ export function starteLevel(wurzel, level, optionen) {
       mitHilfe,
       beiAnsage: sage, // der Aufgabentyp darf den Auftrag pro Runde neu ansagen
       // ein freundlicher Hinweis, der NICHT als Fehler zählt
-      beiHinweis: (text) => melde(text),
+      beiHinweis: (text) => { melde(text); setzeBit("nachdenklich"); },
       beiRichtig(geschafft, gesamt) {
         fehlerInFolge = 0;
-        zaehler.textContent = `${geschafft} / ${gesamt}`;
+        zeigeZaehler(geschafft, gesamt);
         melde(zufall(TEXTE.lob));
         bitKurz("jubelnd");
       },
@@ -197,7 +230,7 @@ export function starteLevel(wurzel, level, optionen) {
           zeigeHilfe();
         } else {
           melde(hinweis || zufall(TEXTE.trost));
-          setzeBit("stehend");
+          setzeBit("aufmunternd"); // „Nicht schlimm!“
         }
       },
       beiFertig() {
@@ -239,29 +272,52 @@ export function starteLevel(wurzel, level, optionen) {
     const sterne = berechneSterne(level.sterne, fehler, sekunden);
     optionen.beiErgebnis(sterne);
 
-    const karte = document.createElement("div");
-    karte.className = "auswertung";
-    const reihe = document.createElement("div");
-    reihe.className = "sternreihe";
-    reihe.setAttribute("role", "img");
-    reihe.setAttribute("aria-label", `${sterne} von 3 Sternen`);
-    for (let i = 1; i <= 3; i++) {
-      reihe.append(erzeugeSprite(STERN, {
-        faktor: 6,
-        palette: i <= sterne ? STERN.palette : STERN.paletteLeer,
-      }));
+    // Siegertreppchen: in der Mitte der höchste Stern, links und rechts die anderen
+    const buehne = document.createElement("div");
+    buehne.className = "auswertung";
+    const grosserBit = erzeugeSprite(BIT, { pose: "jubelnd", faktor: 7 });
+    grosserBit.classList.add("auswertung-bit");
+    const treppchen = document.createElement("div");
+    treppchen.className = "treppchen";
+    treppchen.setAttribute("role", "img");
+    treppchen.setAttribute("aria-label", `${sterne} von 3 Sternen`);
+    // Reihenfolge der Sterne auf dem Treppchen: 2. links, 1. Mitte, 3. rechts
+    for (const nummer of [2, 1, 3]) {
+      const stufe = document.createElement("div");
+      stufe.className = "podest podest-" + nummer;
+      stufe.append(erzeugeSprite(STERN, { faktor: 7, palette: nummer <= sterne ? STERN.palette : STERN.paletteLeer }));
+      const sockel = document.createElement("div");
+      sockel.className = "sockel";
+      stufe.append(sockel);
+      treppchen.append(stufe);
     }
-    const zahlen = document.createElement("p");
-    zahlen.textContent = `Fehler: ${fehler} · Zeit: ${sekunden} Sekunden`;
-    karte.append(reihe, zahlen);
-    flaeche.append(karte);
+    const info = document.createElement("div");
+    info.className = "auswertung-karte";
+    info.innerHTML = `<strong class="pixel">Geschafft!</strong>`;
+    for (const zeile of [`Fehler: ${fehler}`, `Zeit: ${sekunden} Sekunden`]) {
+      const p = document.createElement("p");
+      p.textContent = zeile;
+      info.append(p);
+    }
+    if (optionen.edelstein) {
+      // Nach dem Boss: der Edelstein der Welt kommt auf die Weltkarte
+      const p = document.createElement("p");
+      p.className = "auswertung-stein";
+      p.append(erzeugeSprite(EDELSTEIN, { faktor: 3, palette: EDELSTEIN.paletten[optionen.edelstein] }), "Edelstein für die Weltkarte!");
+      info.append(p);
+    }
+    buehne.append(grosserBit, treppchen, info);
+    flaeche.append(buehne);
 
-    setzeBit("jubelnd");
+    setzeBit(sterne === 3 ? "jubelnd" : "aufmunternd");
     // Ein Level kann einen eigenen Abschlusstext haben (z. B. die letzte Mission)
-    sage(level.abschluss || [TEXTE.geschafft, sterne === 3 ? TEXTE.alleSterne : TEXTE.mehrSterne]);
-    const liste = [["Nochmal spielen", phaseAnwenden], ["Zurück zur Welt", optionen.beiZurueck]];
-    if (optionen.beiNaechstes) liste.push(["Nächstes Level", optionen.beiNaechstes]);
+    sage(level.abschluss || [sterne === 3 ? TEXTE.alleSterne : TEXTE.mehrSterne]);
+    const liste = [["Nochmal", phaseAnwenden], ["Zur Welt", optionen.beiZurueck]];
+    if (optionen.beiNaechstes) liste.push(["Weiter", optionen.beiNaechstes]);
     knoepfe(...liste);
+    // „Weiter“ ist der wichtigste Knopf und wird grün
+    const letzter = blasenknoepfe.lastElementChild;
+    if (optionen.beiNaechstes && letzter) letzter.classList.add("gross-gruen");
   }
 
   /* ---------- Los ---------- */

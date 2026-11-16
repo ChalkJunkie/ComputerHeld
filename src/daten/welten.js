@@ -5,9 +5,12 @@
    steht in src/levels/ (z. B. welt1.js). Ein Level ohne Eintrag dort
    erscheint im Spiel als „kommt bald“.
 
-   WICHTIG für den Spielstand-Code: Die Reihenfolge der Level innerhalb
-   einer Welt nicht mehr ändern, sobald Kinder spielen. Neue Level
-   immer HINTEN an die Liste einer Welt anhängen (höchstens 16 pro Welt).
+   Der Spielstand merkt sich die Sterne nach Level-ID (z. B. "1.2").
+   Darum die IDs nicht mehr ändern, sobald Kinder spielen.
+
+   edelstein: Farbe des Edelsteins, den man nach dem Boss der Welt bekommt
+              (rot, blau, gruen, gelb, lila, diamant)
+   karte:     Lage auf der Weltkarte in Prozent (x von links, y von oben)
 
    art: "normal" = Pflicht-Level, "boss" = Abschluss der Welt,
         "bonus"  = Zusatz-Level (zählt nicht für den Abschluss der Welt)
@@ -21,6 +24,8 @@ export const SPIEL = {
 export const WELTEN = [
   {
     id: 1,
+    edelstein: "gruen",
+    karte: { x: 13, y: 64 },
     name: "Mausland",
     thema: "Hier lernst du die Maus kennen.",
     farben: { hell: "#d9efb8", mittel: "#8fcf5a", dunkel: "#3f7d2a" },
@@ -38,6 +43,8 @@ export const WELTEN = [
   },
   {
     id: 2,
+    edelstein: "blau",
+    karte: { x: 36, y: 40 },
     name: "Tastaturtal",
     thema: "Hier lernst du die besonderen Tasten.",
     farben: { hell: "#d3e6f7", mittel: "#7fb6e6", dunkel: "#2c5f94" },
@@ -56,6 +63,8 @@ export const WELTEN = [
   },
   {
     id: 3,
+    edelstein: "lila",
+    karte: { x: 58, y: 32 },
     name: "Fensterburg",
     thema: "Hier lernst du Fenster und die Taskleiste.",
     farben: { hell: "#e3ddf0", mittel: "#b3a3d9", dunkel: "#5a4690" },
@@ -69,6 +78,8 @@ export const WELTEN = [
   },
   {
     id: 4,
+    edelstein: "gelb",
+    karte: { x: 36, y: 79 },
     name: "Ordnerwald",
     thema: "Hier lernst du Dateien und Ordner.",
     farben: { hell: "#e6dcc3", mittel: "#c9a35e", dunkel: "#6e4a1c" },
@@ -84,6 +95,8 @@ export const WELTEN = [
   },
   {
     id: 5,
+    edelstein: "rot",
+    karte: { x: 58, y: 77 },
     name: "Programmpalast",
     thema: "Hier lernst du Programme zu bedienen.",
     farben: { hell: "#fbe9b0", mittel: "#f0c040", dunkel: "#8a5a00" },
@@ -100,6 +113,8 @@ export const WELTEN = [
   },
   {
     id: 6,
+    edelstein: "diamant",
+    karte: { x: 84, y: 52 },
     name: "Profi-Gipfel",
     thema: "Für alle, die schon viel können.",
     farben: { hell: "#e4f3f5", mittel: "#a5dbe3", dunkel: "#2b6f7a" },

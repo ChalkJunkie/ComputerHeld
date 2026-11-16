@@ -12,14 +12,14 @@ Das Zehnfingersystem ist **nicht** Teil dieses Projekts (dafür gibt es einen se
 - Ich (die Lehrkraft) bin kein Webentwickler. Halte den Code einfach, gut kommentiert und leicht änderbar. Inhalte (Texte, Aufgaben, Farben, Sprites) gehören in Datendateien, nicht tief in die Logik.
 - Arbeite **Welt für Welt**. Baue nichts auf Vorrat. Vor größeren Entscheidungen kurz nachfragen.
 - Teste nach jeder Änderung selbst (wenn möglich im Browser, mit Screenshot) und melde knapp, was funktioniert und was nicht.
-- Barrierearm und klassenzimmertauglich: große Schrift, hoher Kontrast, Ton immer abschaltbar (Standard: aus), keine blinkenden Effekte.
+- Barrierearm und klassenzimmertauglich: große Schrift, hoher Kontrast, kein Ton im Spiel, keine blinkenden Effekte.
 
 ## Technische Eckpunkte
 
 *(Vorschlag, bitte bei Abweichungswunsch nachfragen)*
 
 - Reines HTML, CSS und JavaScript (ES-Module), **kein Build-Schritt, kein Framework**, lauffähig direkt auf GitHub Pages. Keine externen Abhängigkeiten zur Laufzeit (Schriften und Grafiken liegen im Repository, damit es auch hinter Schulfiltern funktioniert).
-- Fortschritt (Sterne, freigeschaltete Level, Einstellungen) in `localStorage`, dazu ein **Export/Import-Code** als Backup, falls Schulrechner zurückgesetzt werden. Keine Konten, keine personenbezogenen Daten, keine Server, kein Tracking.
+- Fortschritt (Sterne, freigeschaltete Level, Einstellungen) in `localStorage`, dazu eine **Spielstand-Datei** (JSON, z. B. „Spielstand-ComputerHeld-2026-11-16.json“) zum Herunterladen als Backup, falls Schulrechner zurückgesetzt werden. Auf der Weltkarte gibt es „Spielstand speichern“, auf der Startseite „Neues Abenteuer“ und „Spielstand laden“. Beim Laden wird der Spielstand auf dem Rechner ersetzt. Keine Konten, keine personenbezogenen Daten, keine Server, kein Tracking.
 - Kein Mobil-/Touch-Support nötig. Bei Touch-Geräten höchstens ein freundlicher Hinweis „Dieses Spiel braucht Maus und Tastatur“.
 - Dateistruktur (Vorschlag):
   - `index.html` – Start und Weltkarte
@@ -116,7 +116,7 @@ Das Dateisystem eines Levels wird zu Beginn aus den Leveldaten aufgebaut und bei
 
 1. **Grafik-Test:** Bit als Pixelgrafik (drei Posen) mit Vorschauseite. *(Läuft separat; Ergebnis bestimmt den Grafikstil.)*
 2. **Technischer Prototyp:** AltGr-Eingabe (@, €) und Abfangen von Strg+S auf den echten Schulrechnern testen.
-3. **Gerüst:** Startseite, Weltkarte, Level-Schablone, Fortschritt mit localStorage und Export/Import, Einstellungen (Ton, Schriftgröße).
+3. **Gerüst:** Startseite, Weltkarte, Level-Schablone, Fortschritt mit localStorage und Spielstand-Datei, Einstellungen (Schriftgröße).
 4. **Welt 1 (Mausland)** komplett – erprobt die Level-Schablone.
 5. **Welt 2 (Tastaturtal).**
 6. **Mini-Desktop-Basis**, dann Welt 3, 4, 5.
@@ -125,8 +125,7 @@ Das Dateisystem eines Levels wird zu Beginn aus den Leveldaten aufgebaut und bei
 
 ## Offene Punkte
 
-- Technische Eckpunkte (Speicherung, Export-Code, Ordnerstruktur) sind Vorschläge und noch nicht endgültig bestätigt.
+- Technische Eckpunkte (Speicherung, Spielstand-Datei, Ordnerstruktur) sind Vorschläge und noch nicht endgültig bestätigt.
 - Genaue Sternekriterien (Fehlerzahl, Zeitgrenzen) und Schwelle für Bonus-Level festlegen.
 - Name des Spiels und Titelbild.
-- Ton: Soll es optionale, selbst erzeugte Soundeffekte geben?
 - Test auf den echten Schulrechnern (Browser, Tastaturlayout, AltGr, Bildschirmauflösung).

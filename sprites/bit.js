@@ -176,6 +176,63 @@ export const BIT = {
       "KCCK",
       "CKKC",
     ] },
+    // --- Arm zeigt nach rechts (zur Sprechblase) ---
+    armRechtsZeigt: { x: 23, y: 19, pixel: [
+      "KKKKKKKK",
+      "MMMMDCCK",
+      "MMMMDCCK", // Pfote
+      "KKKKKKKK",
+    ] },
+
+    // --- Pfote am Kinn (nachdenklich) ---
+    armLinksKinn: { x: 5, y: 16, pixel: [
+      "....KKKK",
+      "....KCCK", // Pfote
+      "...KLCCK",
+      "...KLMK.",
+      "...KLMK.",
+      "...KKKK.",
+    ] },
+
+    // --- Arme seitlich ausgebreitet (aufmunternd) ---
+    armLinksOffen: { x: 2, y: 21, pixel: [
+      "KKKKKKK",
+      "KCCLMMM", // Pfote links
+      "KCCLMMM",
+      "KKKKKKK",
+    ] },
+    armRechtsOffen: { x: 23, y: 21, pixel: [
+      "KKKKKK",
+      "MMDCCK", // Pfote rechts
+      "MMDCCK",
+      "KKKKKK",
+    ] },
+
+    // --- Augen schauen nach oben (nachdenklich) ---
+    augeLinksOben: { x: 8, y: 10, pixel: [
+      "EEWW",
+      "EEWE",
+      "EEEE",
+      "EEEE",
+      "EEEE",
+    ] },
+    augeRechtsOben: { x: 20, y: 10, pixel: [
+      "EEWW",
+      "EEWE",
+      "EEEE",
+      "EEEE",
+      "EEEE",
+    ] },
+    // Augenbrauen: die rechte ist etwas hochgezogen („Hmm …“)
+    braueLinks: { x: 8, y: 8, pixel: ["DDDD"] },
+    braueRechts: { x: 20, y: 7, pixel: ["DDDD"] },
+
+    // --- Mund: kleiner, gerader Mund (nachdenklich) ---
+    mundFlach: { x: 14, y: 16, pixel: [
+      "CCCC",
+      "CKKC",
+    ] },
+
     mundOffen: { x: 14, y: 16, pixel: [
       "KKKK",
       "CPPC", // Zunge
@@ -196,6 +253,21 @@ export const BIT = {
       titel: "Winkend",
       teile: ["armLinksOben", "armRechtsUnten",
               "augeLinksOffen", "augeRechtsOffen", "mundLaecheln"],
+    },
+    nachdenklich: {
+      titel: "Nachdenklich",   // bei Tipps
+      teile: ["armRechtsUnten", "armLinksKinn",
+              "augeLinksOben", "augeRechtsOben", "braueLinks", "braueRechts", "mundFlach"],
+    },
+    zeigend: {
+      titel: "Zeigend",        // beim Erklären, zeigt auf die Sprechblase
+      teile: ["armLinksUnten", "armRechtsZeigt",
+              "augeLinksOffen", "augeRechtsOffen", "mundLaecheln"],
+    },
+    aufmunternd: {
+      titel: "Aufmunternd",    // nach einem Fehler: „Nicht schlimm!“
+      teile: ["armLinksOffen", "armRechtsOffen",
+              "augeLinksOffen", "augeRechtsOffen", "mundOffen"],
     },
     jubelnd: {
       titel: "Jubelnd",
