@@ -198,17 +198,79 @@ canvas.sprite { image-rendering: pixelated; display: block; flex: none; }
 .blasenknoepfe { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: flex-end; }
 .zaehler { font-size: 0.9rem; min-width: 5rem; text-align: right; align-self: center; }
 
-/* Zielscheiben-Aufgabe */
-.ziel { position: absolute; }
+/* Spielfläche und (nur beim Zeigen und Üben) die Hilfe-Tafel daneben */
+.spielbereich { flex: 1; min-height: 0; display: flex; gap: 0.6rem; }
+.hilfe-tafel {
+  flex: none; width: 9rem; box-sizing: border-box;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.6rem;
+  padding: 0.5rem; text-align: center; font-size: 0.85rem;
+  background: var(--weiss); border: var(--rahmen) solid var(--tinte);
+}
+.hilfe-tafel[hidden] { display: none; }
+.hilfe-tafel p { margin: 0; }
+.rueckmeldung { font-weight: bold; min-height: 1.4em; margin: 0.2rem 0 0; }
+
+/* Dinge auf der Spielfläche (Zielscheiben, Kisten, Edelsteine …) */
+.ziel { position: absolute; user-select: none; }
+.ziel.mittig { transform: translate(-50%, -50%); }
 .ziel.mit-hilfe { outline: 6px dashed var(--tinte); outline-offset: 10px; }
-.ziel-schild {
-  position: absolute; left: 50%; bottom: calc(100% + 18px); transform: translateX(-50%);
+.ziel-schild, .demo-schild, .wegweiser {
   background: var(--weiss); border: 3px solid var(--tinte); padding: 0 0.5rem;
   font-weight: bold; white-space: nowrap;
 }
+.ziel-schild { position: absolute; left: 50%; bottom: calc(100% + 18px); transform: translateX(-50%); }
 .haltebalken { height: 10px; margin-top: 4px; border: 3px solid var(--tinte); background: var(--weiss); }
 .haltebalken div { height: 100%; width: 0; background: var(--gut); }
-.demo-zeiger { position: absolute; pointer-events: none; }
+
+/* Vorführung: gezeichneter Mauszeiger mit Schild */
+.demo-zeiger { position: absolute; pointer-events: none; z-index: 5; }
+.demo-schild { position: absolute; pointer-events: none; z-index: 5; background: var(--akzent); }
+.demo-schild[hidden] { display: none; }
+
+/* Kontextmenü */
+.kontextmenue {
+  position: absolute; z-index: 4; display: flex; flex-direction: column; min-width: 11rem;
+  background: var(--weiss); border: var(--rahmen) solid var(--tinte); box-shadow: 4px 4px 0 var(--tinte);
+}
+.kontextmenue[hidden] { display: none; }
+.kontextmenue button {
+  font: inherit; color: var(--tinte); text-align: left; padding: 0.35rem 0.8rem;
+  background: none; border: none; cursor: pointer;
+}
+.kontextmenue button:hover, .kontextmenue button:focus-visible { background: var(--akzent); }
+.kontextmenue button.mit-hilfe { outline: 4px dashed var(--tinte); outline-offset: -4px; font-weight: bold; }
+
+/* Scrollen: langer Schacht ohne Bildlaufleiste */
+.rollfeld { position: absolute; inset: 0; overflow-y: scroll; scrollbar-width: none; outline: none; }
+.rollfeld::-webkit-scrollbar { display: none; }
+.schacht {
+  position: relative;
+  /* Erdschichten als harte Streifen */
+  background: repeating-linear-gradient(180deg,
+    #d9b98a 0 148px, #b98d57 148px 152px, #cfa873 152px 296px, #b98d57 296px 300px);
+}
+.stufe {
+  position: absolute; left: 0.6rem; transform: translateY(-50%);
+  background: var(--papier); border: 3px solid var(--tinte); padding: 0 0.4rem; font-size: 0.8rem;
+}
+.wegweiser { position: absolute; right: 0.8rem; top: 0.8rem; z-index: 3; background: var(--akzent); }
+
+/* Markieren: Rahmen aufziehen */
+.auswahlrahmen {
+  position: absolute; z-index: 3; box-sizing: border-box; pointer-events: none;
+  border: 3px dashed #1b4fd8; background: rgba(27, 79, 216, 0.15);
+}
+.hilfsrahmen { position: absolute; box-sizing: border-box; border: 4px dashed var(--tinte); pointer-events: none; }
+.hilfsrahmen span {
+  position: absolute; background: var(--akzent); border: 3px solid var(--tinte);
+  padding: 0 0.4rem; font-weight: bold; white-space: nowrap; font-size: 0.85rem;
+}
+.ecke-start { left: -4px; bottom: 100%; }
+.ecke-ende { right: -4px; top: 100%; }
+
+/* Ziehen und Ablegen */
+.greifbar { cursor: grab; z-index: 2; }
+.greifbar.gegriffen { cursor: grabbing; }
 
 /* Auswertung */
 .auswertung {

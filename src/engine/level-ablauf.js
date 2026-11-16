@@ -6,6 +6,7 @@
      3. Anwenden   – Aufgabe ohne Hilfe, Fehler und Zeit werden gezählt
      4. Sterne     – Auswertung
    Wer das Level schon geschafft hat, startet gleich bei „Anwenden“.
+   Hat ein Level keinen Abschnitt "gefuehrt" (Boss), entfällt das Üben.
 
    Was im Level passiert, steht in den Level-Daten (src/levels/).
    Wie eine Aufgabe funktioniert, steht im Aufgabentyp (src/engine/aufgaben/).
@@ -53,19 +54,27 @@ export function starteLevel(wurzel, level, optionen) {
       <h1 class="pixel"></h1>
       <ol class="phasen">${PHASEN.map((p, i) => `<li>${i + 1} ${p}</li>`).join("")}</ol>
     </header>
-    <div class="spielflaeche"></div>
+    <div class="spielbereich">
+      <div class="spielflaeche"></div>
+      <aside class="hilfe-tafel" hidden></aside>
+    </div>
     <footer class="bit-leiste">
       <div class="bit"></div>
       <div class="sprechblase">
-        <div class="blasentext" aria-live="polite"></div>
+        <div class="blasentext" aria-live="polite">
+          <div class="ansage"></div>
+          <p class="rueckmeldung"></p>
+        </div>
         <div class="blasenknoepfe"></div>
       </div>
       <div class="zaehler pixel"></div>
     </footer>`;
   wurzel.querySelector("h1").textContent = `${level.id} ${level.titel}`;
   const flaeche = wurzel.querySelector(".spielflaeche");
+  const tafel = wurzel.querySelector(".hilfe-tafel");
   const bitFeld = wurzel.querySelector(".bit");
-  const blasentext = wurzel.querySelector(".blasentext");
+  const ansage = wurzel.querySelector(".ansage");
+  const rueckmeldung = wurzel.querySelector(".rueckmeldung");
   const blasenknoepfe = wurzel.querySelector(".blasenknoepfe");
   const zaehler = wurzel.querySelector(".zaehler");
   wurzel.querySelector("[data-zurueck]").addEventListener("click", optionen.beiZurueck);
@@ -85,13 +94,19 @@ export function starteLevel(wurzel, level, optionen) {
     setzeBit(pose);
     poseTimer = setTimeout(() => setzeBit("stehend"), 1200);
   }
+  /* sage(): der eigentliche Auftrag – bleibt stehen, bis ein neuer kommt.
+     melde(): kurze Rückmeldung darunter (Lob, Trost, Tipp). */
   function sage(absaetze) {
     const liste = Array.isArray(absaetze) ? absaetze : [absaetze];
-    blasentext.replaceChildren(...liste.map((text) => {
+    ansage.replaceChildren(...liste.map((text) => {
       const p = document.createElement("p");
       p.textContent = text;
       return p;
     }));
+    rueckmeldung.textContent = "";
+  }
+  function melde(text) {
+    rueckmeldung.textContent = text;
   }
   function knoepfe(...liste) { // liste: [Beschriftung, Funktion], …
     blasenknoepfe.replaceChildren(...liste.map(([text, aktion]) => {
@@ -111,10 +126,14 @@ export function starteLevel(wurzel, level, optionen) {
       else li.removeAttribute("aria-current");
     });
   }
-  function raeumeAuf() {
+  /* Räumt die Spielfläche. mitTafel = true blendet die Hilfe-Tafel
+     (Bild der Maus neben der Spielfläche) ein. */
+  function raeumeAuf(mitTafel = false) {
     if (laufend) laufend.beenden();
     laufend = null;
     flaeche.replaceChildren();
+    tafel.replaceChildren();
+    tafel.hidden = !mitTafel;
     zaehler.textContent = "";
   }
 
@@ -122,27 +141,27 @@ export function starteLevel(wurzel, level, optionen) {
   let hilfeStufe = 0;
   function zeigeHilfe() {
     if (hilfeStufe < level.hilfen.length) {
-      sage(["Tipp: " + level.hilfen[hilfeStufe]]);
+      melde("Tipp: " + level.hilfen[hilfeStufe]);
       hilfeStufe++;
     } else {
-      sage(TEXTE.keineHilfeMehr);
+      melde(TEXTE.keineHilfeMehr);
     }
     setzeBit("winkend");
   }
 
   /* ---------- Phase 1: Zeigen ---------- */
   function phaseZeigen() {
-    raeumeAuf();
+    raeumeAuf(true);
     setzePhase(0);
     setzeBit("winkend");
     sage(level.erklaerung);
-    laufend = typ.zeigeDemo(flaeche);
-    knoepfe(["Los geht's!", phaseUeben]);
+    laufend = typ.zeigeDemo(flaeche, tafel, level.gefuehrt || level.selbst);
+    knoepfe(["Los geht's!", level.gefuehrt ? phaseUeben : phaseAnwenden]);
   }
 
   /* ---------- Phase 2 und 3: Aufgabe mit oder ohne Hilfe ---------- */
   function starteAufgabe({ mitHilfe, einstellungen, beiFertig }) {
-    raeumeAuf();
+    raeumeAuf(mitHilfe);
     setzeBit("stehend");
     sage(level.aufgabe);
     knoepfe(["Tipp von Bit", zeigeHilfe]);
@@ -150,16 +169,19 @@ export function starteLevel(wurzel, level, optionen) {
     let fehler = 0;
     let fehlerInFolge = 0;
     const startzeit = performance.now();
-    zaehler.textContent = `0 / ${einstellungen.runden}`;
+    const runden = typ.anzahlRunden ? typ.anzahlRunden(einstellungen) : einstellungen.runden;
+    zaehler.textContent = `0 / ${runden}`;
 
     laufend = typ.starte({
       flaeche,
+      tafel: mitHilfe ? tafel : null,
       einstellungen,
       mitHilfe,
+      beiAnsage: sage, // der Aufgabentyp darf den Auftrag pro Runde neu ansagen
       beiRichtig(geschafft, gesamt) {
         fehlerInFolge = 0;
         zaehler.textContent = `${geschafft} / ${gesamt}`;
-        sage(zufall(TEXTE.lob));
+        melde(zufall(TEXTE.lob));
         bitKurz("jubelnd");
       },
       beiFehler() {
@@ -170,7 +192,7 @@ export function starteLevel(wurzel, level, optionen) {
           fehlerInFolge = 0;
           zeigeHilfe();
         } else {
-          sage(zufall(TEXTE.trost));
+          melde(zufall(TEXTE.trost));
           setzeBit("stehend");
         }
       },

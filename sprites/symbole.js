@@ -96,3 +96,129 @@ export const ZEIGER = {
     ".....KKKK..",
   ],
 };
+
+// --- Kiste (16 x 12) in drei Farben ------------------------------------
+// H = helle Kante, B = Fläche, D = dunkle Kante, Y = Schloss
+const KISTE_BRAUN = {
+  K: { name: "Umriss",  farbe: "#2e1c12" },
+  H: { name: "Hell",    farbe: "#c48c56" },
+  B: { name: "Fläche",  farbe: "#9a6338" },
+  D: { name: "Dunkel",  farbe: "#6e4424" },
+  Y: { name: "Schloss", farbe: "#f5c12e" },
+};
+export const KISTE = {
+  breite: 16,
+  hoehe: 12,
+  palette: KISTE_BRAUN,
+  paletten: {
+    braun: KISTE_BRAUN,
+    rot:  { ...KISTE_BRAUN, H: { name: "Hell", farbe: "#f08a7a" }, B: { name: "Fläche", farbe: "#d6402b" }, D: { name: "Dunkel", farbe: "#8f2415" } },
+    blau: { ...KISTE_BRAUN, H: { name: "Hell", farbe: "#8fc0f0" }, B: { name: "Fläche", farbe: "#3f7fd0" }, D: { name: "Dunkel", farbe: "#234a8a" } },
+  },
+  basis: [
+    "..KKKKKKKKKKKK..",
+    ".KHHHHHHHHHHHHK.",
+    "KHBBBBBBBBBBBBHK",
+    "KHBBBBBBBBBBBBHK",
+    "KKKKKKKKKKKKKKKK",
+    "KBBBBBBYYBBBBBBK",
+    "KBBBBBBYYBBBBBBK",
+    "KDBBBBBBBBBBBBDK",
+    "KDBBBBBBBBBBBBDK",
+    "KDBBBBBBBBBBBBDK",
+    "KDDDDDDDDDDDDDDK",
+    "KKKKKKKKKKKKKKKK",
+  ],
+};
+
+// --- Edelstein (12 x 10) in drei Farben --------------------------------
+const EDELSTEIN_ROT = {
+  K: { name: "Umriss", farbe: "#2e1c12" },
+  H: { name: "Hell",   farbe: "#ffb3a6" },
+  B: { name: "Fläche", farbe: "#e2452f" },
+  D: { name: "Dunkel", farbe: "#9c2414" },
+};
+export const EDELSTEIN = {
+  breite: 12,
+  hoehe: 10,
+  palette: EDELSTEIN_ROT,
+  paletten: {
+    rot:   EDELSTEIN_ROT,
+    blau:  { ...EDELSTEIN_ROT, H: { name: "Hell", farbe: "#b9dcff" }, B: { name: "Fläche", farbe: "#3f8ae0" }, D: { name: "Dunkel", farbe: "#1f4f96" } },
+    gruen: { ...EDELSTEIN_ROT, H: { name: "Hell", farbe: "#c4f5b0" }, B: { name: "Fläche", farbe: "#3fae3a" }, D: { name: "Dunkel", farbe: "#1f6b22" } },
+  },
+  basis: [
+    "...KKKKKK...",
+    "..KHHBBBBK..",
+    ".KHHBBBBBDK.",
+    "KHHBBBBBBDDK",
+    "KHBBBBBBBDDK",
+    ".KBBBBBBDDK.",
+    "..KBBBBDDK..",
+    "...KBBDDK...",
+    "....KBDK....",
+    ".....KK.....",
+  ],
+};
+
+// --- Stein (12 x 8) ----------------------------------------------------
+export const STEIN = {
+  breite: 12,
+  hoehe: 8,
+  palette: {
+    K: { name: "Umriss", farbe: "#2e1c12" },
+    H: { name: "Hell",   farbe: "#c9c9c9" },
+    G: { name: "Grau",   farbe: "#9a9a9a" },
+    D: { name: "Dunkel", farbe: "#6a6a6a" },
+  },
+  basis: [
+    "...KKKKK....",
+    "..KHHHGGK...",
+    ".KHHGGGGGKK.",
+    "KHGGGGGGGGDK",
+    "KGGGGGGGGDDK",
+    "KGGGGGGGDDDK",
+    ".KGGGGDDDDK.",
+    "..KKKKKKKK..",
+  ],
+};
+
+// --- Computer-Maus von oben (12 x 15) ----------------------------------
+// L = linke Taste, R = rechte Taste, W = Mausrad, B = Gehäuse
+// Über die Paletten wird jeweils ein Teil gelb hervorgehoben.
+const MAUS_NORMAL = {
+  K: { name: "Umriss",       farbe: "#2e1c12" },
+  L: { name: "Linke Taste",  farbe: "#ececec" },
+  R: { name: "Rechte Taste", farbe: "#ececec" },
+  W: { name: "Mausrad",      farbe: "#8c8c8c" },
+  B: { name: "Gehäuse",      farbe: "#d2d2d2" },
+};
+const GELB = "#f5c12e";
+export const MAUSGERAET = {
+  breite: 12,
+  hoehe: 15,
+  palette: MAUS_NORMAL,
+  paletten: {
+    normal: MAUS_NORMAL,
+    links:  { ...MAUS_NORMAL, L: { name: "Linke Taste",  farbe: GELB } },
+    rechts: { ...MAUS_NORMAL, R: { name: "Rechte Taste", farbe: GELB } },
+    rad:    { ...MAUS_NORMAL, W: { name: "Mausrad",      farbe: GELB } },
+  },
+  basis: [
+    "....KKKKK...",
+    "..KLLKKKRRK.",
+    ".KLLLKWKRRRK",
+    ".KLLLKWKRRRK",
+    ".KLLLKWKRRRK",
+    ".KLLLKKKRRRK",
+    ".KLLLLKRRRRK",
+    ".KKKKKKKKKKK",
+    ".KBBBBBBBBBK",
+    ".KBBBBBBBBBK",
+    ".KBBBBBBBBBK",
+    ".KBBBBBBBBBK",
+    ".KBBBBBBBBBK",
+    "..KBBBBBBBK.",
+    "...KKKKKKK..",
+  ],
+};

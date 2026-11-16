@@ -1,12 +1,13 @@
 /* =====================================================================
    AUFGABENTYP „ZIELSCHEIBEN“
-   Eine Zielscheibe erscheint an einer zufälligen Stelle. Das Kind zeigt
-   mit dem Mauszeiger darauf (oder klickt sie an), dann kommt die nächste.
+   Ein Ding erscheint an einer zufälligen Stelle. Das Kind zeigt darauf,
+   klickt es an oder doppelklickt es – dann kommt das nächste.
 
    Einstellungen (aus den Level-Daten):
-     runden     – wie viele Zielscheiben
-     groesse    – Vergrößerung der Zielscheibe (16 Pixel x groesse)
-     ausloeser  – "zeigen" (draufzeigen und warten) oder "klick"
+     runden     – wie viele Dinge
+     groesse    – Vergrößerung des Bildes
+     bild       – welches Bild (Standard "zielscheibe", siehe hilfsmittel.js)
+     ausloeser  – "zeigen" (draufzeigen und warten), "klick" oder "doppelklick"
      haltezeit  – nur bei "zeigen": Millisekunden, die der Zeiger bleiben muss
 
    Jeder Aufgabentyp hat dieselben zwei Funktionen:
@@ -15,92 +16,95 @@
    Beide geben ein Objekt mit beenden() zurück, das alles wieder aufräumt.
    ===================================================================== */
 
-import { ZIELSCHEIBE, ZEIGER } from "../../../sprites/symbole.js";
-import { erzeugeSprite } from "../sprite-render.js";
+import { bild, zufallsPlatz, zeigeMaus, schild, demoBuehne } from "./hilfsmittel.js";
 
 /* Wer kürzer als so viele Millisekunden über das Ziel huscht, hat nur
    „gestreift“ – das zählt nicht als Fehler. */
 const STREIFEN_MS = 200;
-/* Mindestabstand (in Bildschirmpunkten) zwischen zwei Zielen hintereinander */
-const MINDESTABSTAND = 250;
+/* So lange wird nach einem einzelnen Klick auf den zweiten Klick gewartet. */
+const DOPPELKLICK_WARTEN_MS = 600;
 
-function baueZiel(groesse) {
+/* Texte der Hilfe je Auslöser: [Schild am Ziel, Teil der Maus, Text zur Maus] */
+const HILFE = {
+  zeigen:      ["Hierhin!", "normal", "Nur zeigen, nicht klicken."],
+  klick:       ["Klick mich!", "links", "Linke Taste: einmal kurz drücken."],
+  doppelklick: ["Zweimal schnell!", "links", "Linke Taste: zweimal schnell drücken."],
+};
+
+function baueZiel(einstellungen) {
   const ziel = document.createElement("div");
   ziel.className = "ziel";
-  ziel.append(erzeugeSprite(ZIELSCHEIBE, { faktor: groesse }));
-  const balken = document.createElement("div");
-  balken.className = "haltebalken";
-  balken.innerHTML = "<div></div>";
-  ziel.append(balken);
+  ziel.append(bild(einstellungen.bild || "zielscheibe", einstellungen.groesse));
+  if (einstellungen.ausloeser === "zeigen") {
+    const balken = document.createElement("div");
+    balken.className = "haltebalken";
+    balken.innerHTML = "<div></div>";
+    ziel.append(balken);
+  }
   return ziel;
 }
 
 export const zielscheiben = {
 
-  starte({ flaeche, einstellungen, mitHilfe, beiRichtig, beiFehler, beiFertig }) {
-    const { runden, groesse, ausloeser, haltezeit = 700 } = einstellungen;
-    const kante = 16 * groesse; // Seitenlänge der Zielscheibe
+  starte({ flaeche, tafel, einstellungen, mitHilfe, beiRichtig, beiFehler, beiFertig }) {
+    const { runden, ausloeser, haltezeit = 700 } = einstellungen;
     let runde = 0;
     let ziel = null;
-    let letztePosition = null;
-    let halteTimer = null;
+    let letzteStelle = null;
+    let timer = null;
     let betretenUm = 0;
     let beendet = false;
 
-    function zufallsPosition() {
-      const rand = 24;
-      const platzOben = mitHilfe ? 60 : rand; // Platz für das Schild „Hierhin!“
-      const breite = flaeche.clientWidth - kante - 2 * rand;
-      const hoehe = flaeche.clientHeight - kante - platzOben - rand - 20;
-      let position;
-      for (let versuch = 0; versuch < 30; versuch++) {
-        position = {
-          x: rand + Math.random() * Math.max(0, breite),
-          y: platzOben + Math.random() * Math.max(0, hoehe),
-        };
-        if (!letztePosition) break;
-        const abstand = Math.hypot(position.x - letztePosition.x, position.y - letztePosition.y);
-        if (abstand >= MINDESTABSTAND) break;
-      }
-      letztePosition = position;
-      return position;
-    }
+    if (mitHilfe) zeigeMaus(tafel, HILFE[ausloeser][1], HILFE[ausloeser][2]);
 
     function naechstesZiel() {
       if (beendet) return;
-      ziel = baueZiel(groesse);
-      const position = zufallsPosition();
-      ziel.style.left = position.x + "px";
-      ziel.style.top = position.y + "px";
+      ziel = baueZiel(einstellungen);
+      const canvas = ziel.querySelector("canvas");
+      const stelle = zufallsPlatz(flaeche, canvas.width, canvas.height + 20, {
+        oben: mitHilfe ? 64 : 24, // Platz für das Schild
+        fern: letzteStelle,
+      });
+      letzteStelle = stelle;
+      ziel.style.left = stelle.x + "px";
+      ziel.style.top = stelle.y + "px";
       if (mitHilfe) {
         ziel.classList.add("mit-hilfe");
-        const schild = document.createElement("div");
-        schild.className = "ziel-schild";
-        schild.textContent = "Hierhin!";
-        ziel.append(schild);
+        ziel.append(schild(HILFE[ausloeser][0]));
       }
-      const balken = ziel.querySelector(".haltebalken div");
 
       if (ausloeser === "zeigen") {
+        const balken = ziel.querySelector(".haltebalken div");
         ziel.addEventListener("mouseenter", () => {
           betretenUm = performance.now();
           // Balken füllt sich, solange der Zeiger auf dem Ziel bleibt
           balken.style.transition = `width ${haltezeit}ms linear`;
           balken.style.width = "100%";
-          halteTimer = setTimeout(getroffen, haltezeit);
+          timer = setTimeout(getroffen, haltezeit);
         });
         ziel.addEventListener("mouseleave", () => {
-          if (!halteTimer) return;
-          clearTimeout(halteTimer);
-          halteTimer = null;
+          if (!timer) return;
+          clearTimeout(timer);
+          timer = null;
           balken.style.transition = "none";
           balken.style.width = "0";
           if (performance.now() - betretenUm >= STREIFEN_MS) beiFehler();
         });
-      } else {
+      } else if (ausloeser === "klick") {
         ziel.addEventListener("mousedown", (e) => {
           if (e.button !== 0) return; // nur die linke Taste zählt
           e.stopPropagation();
+          getroffen();
+        });
+      } else {
+        // Doppelklick: Bleibt es bei einem einzelnen Klick, war es zu langsam.
+        ziel.addEventListener("click", (e) => {
+          if (e.detail !== 1) return;
+          clearTimeout(timer);
+          timer = setTimeout(beiFehler, DOPPELKLICK_WARTEN_MS);
+        });
+        ziel.addEventListener("dblclick", () => {
+          clearTimeout(timer);
           getroffen();
         });
       }
@@ -108,7 +112,7 @@ export const zielscheiben = {
     }
 
     function getroffen() {
-      halteTimer = null;
+      timer = null;
       ziel.remove();
       runde++;
       beiRichtig(runde, runden);
@@ -131,53 +135,50 @@ export const zielscheiben = {
     return {
       beenden() {
         beendet = true;
-        clearTimeout(halteTimer);
+        clearTimeout(timer);
         flaeche.removeEventListener("mousedown", danebenGeklickt);
         if (ziel) ziel.remove();
       },
     };
   },
 
-  /* Vorführung: Ein gezeichneter Mauszeiger wandert langsam zur Zielscheibe,
-     der Balken füllt sich, dann beginnt es von vorn. */
-  zeigeDemo(flaeche) {
-    const ziel = baueZiel(6);
-    ziel.style.left = "calc(60% - 48px)";
-    ziel.style.top = "calc(45% - 48px)";
+  /* Vorführung: Der gezeichnete Mauszeiger wandert zum Ziel und zeigt,
+     was dort zu tun ist. */
+  zeigeDemo(flaeche, tafel, einstellungen) {
+    const ausloeser = einstellungen.ausloeser;
+    const ziel = baueZiel({ ...einstellungen, groesse: 6 });
+    ziel.classList.add("mittig");
+    ziel.style.left = "60%";
+    ziel.style.top = "45%";
+    flaeche.append(ziel);
     const balken = ziel.querySelector(".haltebalken div");
-    const zeiger = erzeugeSprite(ZEIGER, { faktor: 4 });
-    zeiger.classList.add("demo-zeiger");
-    flaeche.append(ziel, zeiger);
+    const buehne = demoBuehne(flaeche);
+    zeigeMaus(tafel, HILFE[ausloeser][1], HILFE[ausloeser][2]);
 
-    const timer = [];
-    function durchlauf() {
-      // Startpunkt links unten, ohne Bewegung
-      zeiger.style.transition = "none";
-      zeiger.style.left = "20%";
-      zeiger.style.top = "75%";
-      balken.style.transition = "none";
-      balken.style.width = "0";
-      // kurz darauf langsam zur Mitte der Zielscheibe wandern
-      timer[0] = setTimeout(() => {
-        zeiger.style.transition = "left 1800ms ease-in-out, top 1800ms ease-in-out";
-        zeiger.style.left = "60%";
-        zeiger.style.top = "45%";
-      }, 400);
-      // angekommen: Balken füllt sich
-      timer[1] = setTimeout(() => {
-        balken.style.transition = "width 900ms linear";
-        balken.style.width = "100%";
-      }, 2300);
-    }
-    durchlauf();
-    const wiederholung = setInterval(durchlauf, 5000);
+    buehne.schleife(5500, [
+      [0, () => {
+        buehne.setze(20, 75);
+        buehne.sage("");
+        ziel.style.visibility = "visible";
+        if (balken) { balken.style.transition = "none"; balken.style.width = "0"; }
+      }],
+      [400, () => buehne.bewege(60, 45, 1800)],
+      [2400, () => {
+        if (ausloeser === "zeigen") {
+          balken.style.transition = "width 900ms linear";
+          balken.style.width = "100%";
+        } else {
+          buehne.sage("Klick!");
+        }
+      }],
+      [2800, () => { if (ausloeser === "doppelklick") buehne.sage("Klick! Klick!"); }],
+      [3500, () => { ziel.style.visibility = "hidden"; }],
+    ]);
 
     return {
       beenden() {
-        clearInterval(wiederholung);
-        timer.forEach(clearTimeout);
+        buehne.beenden();
         ziel.remove();
-        zeiger.remove();
       },
     };
   },
