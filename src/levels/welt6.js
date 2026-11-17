@@ -67,8 +67,9 @@ const drucke = (name, zeilen, kopien, ansage) => ({
   start: { dokument: dok(name, zeilen) },
   schritte: [{ ziel: { gedruckt: { kopien } }, ansage }],
 });
+// dateityp: true – im „Speichern unter“-Fenster gibt es die Auswahl Dokument/PDF
 const alsPdf = (name, zeilen, ort, pdfName, ansage) => ({
-  start: { dokument: dok(name, zeilen), dateien: ["Dokumente/Schule/"] },
+  start: { dokument: dok(name, zeilen), dateien: ["Dokumente/Schule/"], dateityp: true },
   schritte: [{ ziel: { pdf: { ort, name: pdfName } }, ansage }],
 });
 
@@ -272,7 +273,7 @@ export const LEVEL_WELT6 = {
     lernziel: "Du druckst ein Dokument und speicherst es als PDF.",
     erklaerung: [
       "Drucken findest du im Menü „Datei“ – oder schnell mit Strg+P. Dort stellst du ein, wie viele Exemplare du brauchst.",
-      "Statt auf Papier kannst du auch „Als PDF speichern“ wählen. Ein PDF sieht überall gleich aus – gut zum Verschicken.",
+      "Ein PDF machst du anders: Datei → „Speichern unter“. Dort stellst du den Dateityp auf „PDF“. Ein PDF sieht überall gleich aus – gut zum Verschicken.",
     ],
     aufgabe: "Mach, was ich sage.",
     typ: "schreiben",
@@ -288,7 +289,7 @@ export const LEVEL_WELT6 = {
     ] },
     hilfen: [
       "Datei → Drucken … oder Strg+P. Mit + und − stellst du die Anzahl ein.",
-      "Für ein PDF wählst du im Drucken-Fenster „Als PDF speichern“. Dann Ordner und Namen wie bei „Speichern unter“.",
+      "Für ein PDF: Datei → Speichern unter. Ordner und Namen wählst du wie immer, dann stellst du den Dateityp auf „PDF“.",
     ],
     sterne: { fehlerFuerZwei: 3, fehlerFuerDrei: 1, sekundenFuerDrei: 60 },
   },

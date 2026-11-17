@@ -637,7 +637,7 @@ canvas.sprite { image-rendering: pixelated; display: block; flex: none; }
 .sch-dialog-titel { font-size: 1.1rem; }
 .sch-unter-ort { display: flex; align-items: center; gap: 0.6rem; font-weight: bold; }
 .sch-unter-liste {
-  display: flex; flex-direction: column; gap: 0.1rem; height: 9rem; overflow: auto; padding: 0.3rem;
+  display: flex; flex-direction: column; gap: 0.1rem; height: 7.5rem; overflow: auto; padding: 0.3rem;
   background: var(--weiss); border: 3px solid var(--tinte);
 }
 .sch-unter-eintrag { position: relative; display: flex; align-items: center; gap: 0.5rem; padding: 0.1rem 0.4rem; border: 3px solid transparent; cursor: default; }
@@ -759,3 +759,15 @@ canvas.sprite { image-rendering: pixelated; display: block; flex: none; }
   display: flex; align-items: center; justify-content: center; padding: 0 1rem;
   font-size: 0.8rem; font-weight: bold; color: var(--weiss); background: #1b4fd8; border-top: var(--rahmen) solid var(--tinte);
 }
+
+/* „Speichern unter“: Dateityp wählen (Welt 6) */
+.sch-unter-dateityp { display: flex; align-items: center; gap: 0.6rem; }
+.unter-typ {
+  position: relative; font: inherit; font-size: 0.9rem; color: var(--tinte); cursor: pointer; padding: 0.2rem 0.7rem;
+  background: var(--weiss); border: 3px solid var(--grau-text);
+}
+.unter-typ:hover { background: var(--akzent); }
+.unter-typ.gewaehlt { border-color: #1b4fd8; background: #cfe0ff; font-weight: bold; }
+.druck-drucker { cursor: default; }
+.sch-dialog-box.mit-typ { gap: 0.4rem; }
+.sch-dialog-box.mit-typ .sch-unter-liste { height: 4.6rem; }

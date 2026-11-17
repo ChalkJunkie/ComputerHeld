@@ -11,6 +11,10 @@
    Ein einfacher Klick setzt nur den Schreibstrich in die Zeile
    (dort kommt z. B. ein Bild hin).
 
+   Dateityp im „Speichern unter“-Fenster (nur wenn kontext.dateityp true ist,
+   siehe Welt 6): Dokument (.docx) oder PDF (.pdf). Ein PDF ist eine Kopie
+   zum Lesen – das Dokument selbst bleibt, wie es ist.
+
    Alles, was etwas verändert, geht als „Aktion“ an den Desktop, und der
    fragt vorher die Aufgabe, ob es erlaubt ist:
      zeile-waehlen (ganz: true = ganze Zeile markiert, false = nur Schreibstrich),
@@ -93,7 +97,7 @@ export function baueSchreiben(kontext) {
   let ziehen = null;       // { nr, start, x, y, bewegt }
   let offen = null;        // offene Liste: "datei", "schrift", "groesse", "farbe", "bild"
   let unter = null;        // „Speichern unter“-Fenster: { ort, name, als }
-  let druck = null;        // Drucken-Fenster: { drucker: "klasse" oder "pdf", kopien }
+  let druck = null;        // Drucken-Fenster: { drucker: "klasse", kopien }
   let hilfe = [];
 
   /* ---------- Grundgerüst ---------- */
@@ -216,40 +220,25 @@ export function baueSchreiben(kontext) {
     if (!druck) return;
     const box = el("div", "sch-dialog-box");
     box.append(el("strong", "sch-dialog-titel", "Drucken"));
-    const wahl = el("div", "druck-wahl");
-    const drucker = [
-      ["klasse", "Drucker im Klassenzimmer", erzeugeSprite(SYMBOL_DRUCKER, { faktor: 3 })],
-      ["pdf", "Als PDF speichern", erzeugeSprite(DATEI, { faktor: 3, pose: "pdf" })],
-    ];
-    for (const [id, name, bildchen] of drucker) {
-      const k = el("button", "druck-drucker" + (druck.drucker === id ? " gewaehlt" : ""));
-      k.type = "button";
-      k.dataset.drucker = id;
-      k.append(bildchen, el("span", "", name));
-      k.addEventListener("click", () => { druck.drucker = id; zeichneDruck(); geaendert(); });
-      wahl.append(k);
-    }
-    box.append(el("span", "", "Drucker:"), wahl);
-    if (druck.drucker === "klasse") {
-      const zeile = el("div", "druck-kopien");
-      const minus = el("button", "ex-knopf druck-minus", "−");
-      const plus = el("button", "ex-knopf druck-plus", "+");
-      minus.type = plus.type = "button";
-      minus.disabled = druck.kopien <= 1;
-      plus.disabled = druck.kopien >= 9;
-      minus.addEventListener("click", () => { druck.kopien--; zeichneDruck(); geaendert(); });
-      plus.addEventListener("click", () => { druck.kopien++; zeichneDruck(); geaendert(); });
-      zeile.append(el("span", "", "Anzahl Exemplare:"), minus, el("strong", "druck-zahl", String(druck.kopien)), plus);
-      box.append(zeile);
-    }
+    // Es gibt nur einen Drucker: den im Klassenzimmer
+    const drucker = el("div", "druck-drucker gewaehlt");
+    drucker.append(erzeugeSprite(SYMBOL_DRUCKER, { faktor: 3 }), el("span", "", "Drucker im Klassenzimmer"));
+    box.append(el("span", "", "Drucker:"), drucker);
+    const zeile = el("div", "druck-kopien");
+    const minus = el("button", "ex-knopf druck-minus", "−");
+    const plus = el("button", "ex-knopf druck-plus", "+");
+    minus.type = plus.type = "button";
+    minus.disabled = druck.kopien <= 1;
+    plus.disabled = druck.kopien >= 9;
+    minus.addEventListener("click", () => { druck.kopien--; zeichneDruck(); geaendert(); });
+    plus.addEventListener("click", () => { druck.kopien++; zeichneDruck(); geaendert(); });
+    zeile.append(el("span", "", "Anzahl Exemplare:"), minus, el("strong", "druck-zahl", String(druck.kopien)), plus);
+    box.append(zeile);
     const knoepfe = el("div", "sch-dialog-knoepfe");
-    const ok = el("button", "knopf klein druck-ok", druck.drucker === "pdf" ? "Speichern …" : "Drucken");
+    const ok = el("button", "knopf klein druck-ok", "Drucken");
     const abbruch = el("button", "knopf klein", "Abbrechen");
     ok.type = abbruch.type = "button";
-    ok.addEventListener("click", () => {
-      if (druck.drucker === "pdf") oeffneUnter("pdf");
-      else ausloesen({ art: "drucken", drucker: druck.drucker, kopien: druck.kopien });
-    });
+    ok.addEventListener("click", () => ausloesen({ art: "drucken", drucker: druck.drucker, kopien: druck.kopien }));
     abbruch.addEventListener("click", schliesseDruck);
     knoepfe.append(ok, abbruch);
     box.append(knoepfe);
@@ -271,7 +260,7 @@ export function baueSchreiben(kontext) {
     dialog.hidden = !unter;
     if (!unter) return;
     const box = el("div", "sch-dialog-box");
-    box.append(el("strong", "sch-dialog-titel", unter.als === "pdf" ? "Als PDF speichern" : "Speichern unter"));
+    box.append(el("strong", "sch-dialog-titel", "Speichern unter"));
 
     const zeileOrt = el("div", "sch-unter-ort");
     const hoch = el("button", "ex-knopf sch-unter-hoch", "⬆ Nach oben");
@@ -282,7 +271,8 @@ export function baueSchreiben(kontext) {
     zeileOrt.append(hoch, el("span", "sch-unter-pfad", pfadText));
 
     const ordnerListe = el("div", "sch-unter-liste");
-    const inhalt = fs.inhalt(unter.ort).filter((e) => e.typ === "ordner" || endung(e.name) === "docx");
+    // Gezeigt werden Ordner und Dateien des gewählten Dateityps
+    const inhalt = fs.inhalt(unter.ort).filter((e) => e.typ === "ordner" || endung(e.name) === unter.als);
     if (inhalt.length === 0) ordnerListe.append(el("span", "ex-leer", "(keine Ordner)"));
     for (const e of inhalt) {
       const eintrag = el("div", "sch-unter-eintrag" + (e.typ === "ordner" ? "" : " datei"));
@@ -307,6 +297,20 @@ export function baueSchreiben(kontext) {
     zeileName.append(el("span", "", "Dateiname:"), namensFeld,
       el("span", "sch-unter-typ", unter.als === "pdf" ? ".pdf (PDF)" : ".docx (Dokument)"));
 
+    // Dateityp wählen (nur in Aufgaben, die das brauchen)
+    let zeileTyp = null;
+    if (kontext.dateityp) {
+      zeileTyp = el("div", "sch-unter-dateityp");
+      zeileTyp.append(el("span", "", "Dateityp:"));
+      for (const [id, text] of [["docx", "Dokument (.docx)"], ["pdf", "PDF (.pdf)"]]) {
+        const k = el("button", "unter-typ" + (unter.als === id ? " gewaehlt" : ""), text);
+        k.type = "button";
+        k.dataset.typ = id;
+        k.addEventListener("click", () => { unter.als = id; zeichneUnter(); geaendert(); });
+        zeileTyp.append(k);
+      }
+    }
+
     const knoepfe = el("div", "sch-dialog-knoepfe");
     const ok = el("button", "knopf klein sch-unter-speichern", "Speichern");
     const abbruch = el("button", "knopf klein", "Abbrechen");
@@ -315,7 +319,12 @@ export function baueSchreiben(kontext) {
     abbruch.addEventListener("click", schliesseUnter);
     knoepfe.append(ok, abbruch);
 
-    box.append(zeileOrt, ordnerListe, zeileName, knoepfe);
+    box.append(zeileOrt, ordnerListe, zeileName);
+    if (zeileTyp) {
+      box.append(zeileTyp);
+      box.classList.add("mit-typ"); // mit Dateityp-Zeile wird die Liste niedriger, damit alles ins Fenster passt
+    }
+    box.append(knoepfe);
     dialog.replaceChildren(box);
     markiere();
   }
@@ -466,7 +475,7 @@ export function baueSchreiben(kontext) {
       case "unter-name": return dialog.querySelector(".sch-unter-name");
       case "unter-speichern": return dialog.querySelector(".sch-unter-speichern");
       case "status": return status;
-      case "druck-drucker": return dialog.querySelector(`.druck-drucker[data-drucker="${h.wert}"]`);
+      case "unter-typ": return dialog.querySelector(`.unter-typ[data-typ="${h.wert}"]`);
       case "druck-plus": return dialog.querySelector(".druck-plus");
       case "druck-minus": return dialog.querySelector(".druck-minus");
       case "druck-ok": return dialog.querySelector(".druck-ok");
@@ -482,7 +491,10 @@ export function baueSchreiben(kontext) {
       ziel.classList.add("mit-hilfe");
       if (h.text) {
         const schild = el("span", "desktop-schild", h.text);
-        if (h.wo === "knopf" || h.wo.startsWith("druck") || (h.wo.startsWith("unter") && h.wo !== "unter-name")) schild.classList.add("unten");
+        // Schilder im Speichern-Fenster stehen neben den Knöpfen, damit nichts über den Rand ragt
+        if (h.wo === "unter-typ") schild.classList.add("rechts");
+        else if (h.wo === "unter-speichern") schild.classList.add("links");
+        else if (h.wo === "knopf" || h.wo.startsWith("druck") || (h.wo.startsWith("unter") && h.wo !== "unter-name")) schild.classList.add("unten");
         if (h.wo === "zeile" || h.wo === "status") schild.classList.add("in-zeile");
         ziel.append(schild);
       }

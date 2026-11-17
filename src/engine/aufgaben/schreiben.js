@@ -30,6 +30,8 @@
            (sonst zeigt die Hilfe auf Datei → Speichern unter)
        { gedruckt: { kopien: 2 } }               am Klassen-Drucker gedruckt
        { pdf: { ort: "/Dokumente", name: "Einladung.pdf" } }   als PDF gespeichert
+           (Datei → Speichern unter, Dateityp PDF; start.dateityp: true schaltet die
+           Dateityp-Auswahl im Speichern-Fenster ein)
      Formatieren geht nur, wenn die GANZE Zeile markiert ist (Ziehen mit der
      Maus). Für ein Bild reicht ein Klick in die Zeile (Schreibstrich).
      Mögliche Werte stehen oben in src/desktop/schreiben.js.
@@ -163,7 +165,7 @@ function bewerte(aktion, ziel, dok) {
   }
 
   if (art === "drucken") {
-    if (ziel.pdf) return { ok: false, hinweis: "Hier soll nichts auf Papier gedruckt werden. Wähl „Als PDF speichern“." };
+    if (ziel.pdf) return { ok: false, hinweis: "Hier soll nichts auf Papier gedruckt werden. Ein PDF machst du mit Datei → Speichern unter und dem Dateityp PDF." };
     if (!ziel.gedruckt) return { ok: false, hinweis: "Jetzt bitte nichts drucken – das kostet Papier." };
     const k = ziel.gedruckt.kopien;
     if (aktion.kopien !== k) return { ok: false, hinweis: `Es sollen ${k} ${k === 1 ? "Exemplar" : "Exemplare"} sein. Stell die Anzahl mit + und − ein.` };
@@ -184,7 +186,7 @@ function bewerte(aktion, ziel, dok) {
   }
 
   if (art === "speichern-unter") {
-    if (ziel.pdf) return { ok: false, hinweis: "Das wäre ein normales Dokument. Für ein PDF: Datei → Drucken → „Als PDF speichern“." };
+    if (ziel.pdf) return { ok: false, hinweis: "Das wäre ein normales Dokument. Stell den Dateityp auf PDF." };
     const g = ziel.gespeichertUnter;
     if (!g) return { ok: true };
     if (klein(aktion.ort) !== klein(g.ort)) {
@@ -231,18 +233,17 @@ function hilfeFuer(ziel, dok, prog) {
   if (ziel.gedruckt) {
     const d = prog.druck;
     if (!d) return prog.offen === "datei" ? [{ wo: "option", liste: "datei", wert: "drucken" }] : [{ wo: "knopf", id: "datei", text: "Hier klicken" }];
-    if (d.drucker !== "klasse") return [{ wo: "druck-drucker", wert: "klasse", text: "Hier klicken" }];
     if (d.kopien < ziel.gedruckt.kopien) return [{ wo: "druck-plus", text: "Hier klicken" }];
     if (d.kopien > ziel.gedruckt.kopien) return [{ wo: "druck-minus", text: "Hier klicken" }];
     return [{ wo: "druck-ok", text: "Hier klicken" }];
   }
   if (ziel.pdf) {
     const u = prog.unter;
-    if (u && u.als === "pdf") return unterHilfe(ziel.pdf, u);
-    const d = prog.druck;
-    if (!d) return prog.offen === "datei" ? [{ wo: "option", liste: "datei", wert: "drucken" }] : [{ wo: "knopf", id: "datei", text: "Hier klicken" }];
-    if (d.drucker !== "pdf") return [{ wo: "druck-drucker", wert: "pdf", text: "Hier klicken" }];
-    return [{ wo: "druck-ok", text: "Hier klicken" }];
+    if (!u) return prog.offen === "datei" ? [{ wo: "option", liste: "datei", wert: "unter" }] : [{ wo: "knopf", id: "datei", text: "Hier klicken" }];
+    const schritt = unterHilfe(ziel.pdf, u);
+    // Zuletzt: Dateityp PDF wählen, dann „Speichern“
+    if (schritt[0].wo === "unter-speichern" && u.als !== "pdf") return [{ wo: "unter-typ", wert: "pdf", text: "PDF wählen" }];
+    return schritt;
   }
   return [];
 }
@@ -265,9 +266,10 @@ function unterHilfe(g, u) {
 function bereite(start, alt) {
   if (start.weiter && alt) {
     for (const e of start.dateien || []) alt.fs.lege(e);
+    alt.dateityp = Boolean(start.dateityp) || alt.dateityp;
     return alt;
   }
-  return { fs: baueDateisystem(start.dateien || []), dok: neuesDokument(start.dokument) };
+  return { fs: baueDateisystem(start.dateien || []), dok: neuesDokument(start.dokument), dateityp: Boolean(start.dateityp) };
 }
 
 function mitteInProzent(element, flaeche) {
@@ -340,6 +342,7 @@ export const schreiben = {
         kontext: {
           fs: platz.fs,
           dokument: platz.dok,
+          dateityp: platz.dateityp,
           beiStart: (neu) => { prog = neu; },
           beiAenderung: () => aktualisiereHilfe(),
         },
@@ -429,7 +432,7 @@ export const schreiben = {
       platz = bereite(aufgabe.start, null);
       desk.setze({
         offen: [{ programm: "schreiben", zustand: "maximiert" }],
-        kontext: { fs: platz.fs, dokument: platz.dok, beiStart: (neu) => { prog = neu; } },
+        kontext: { fs: platz.fs, dokument: platz.dok, dateityp: platz.dateityp, beiStart: (neu) => { prog = neu; } },
       });
       buehne.setze(50, 70);
       buehne.sage("");
