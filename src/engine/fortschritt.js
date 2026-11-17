@@ -12,6 +12,11 @@ import { WELTEN } from "../daten/welten.js";
 
 const SPEICHER_NAME = "computerheld-spielstand";
 
+/* LEHRERVERSION (Seite lehrer/index.html): Alles ist freigeschaltet, es wird
+   nichts gespeichert und nichts geladen. Die Sterne gibt es nur, solange die
+   Seite offen ist. Der Spielstand der Kinder auf diesem Rechner bleibt unberührt. */
+export const lehrer = typeof window !== "undefined" && window.COMPUTERHELD_LEHRER === true;
+
 /* Der Spielstand im Arbeitsspeicher. "sterne" merkt sich pro Level-ID
    die beste Sternezahl (1 bis 3). */
 let stand = neuerStand();
@@ -26,6 +31,7 @@ function neuerStand() {
 /* ---------------- Laden und Speichern ---------------- */
 
 export function lade() {
+  if (lehrer) return; // Lehrerversion: immer ein leerer Anfang
   try {
     const text = localStorage.getItem(SPEICHER_NAME);
     if (text) {
@@ -41,6 +47,7 @@ export function lade() {
 }
 
 function speichere() {
+  if (lehrer) return; // Lehrerversion: nichts speichern
   try {
     localStorage.setItem(SPEICHER_NAME, JSON.stringify(stand));
   } catch (fehler) {
@@ -50,6 +57,7 @@ function speichere() {
 
 /* Gibt es schon Sterne? (Dann bietet die Startseite „Weiterspielen“ an.) */
 export function hatFortschritt() {
+  if (lehrer) return false;
   return Object.keys(stand.sterne).length > 0;
 }
 
@@ -94,7 +102,7 @@ export function weltAbgeschlossen(welt) {
 /* Welt 1 ist immer offen. Welt 2 bis 5 öffnen sich nach Welt 1.
    Welt 6 öffnet sich, wenn Welt 1 bis 5 abgeschlossen sind. */
 export function weltFrei(welt) {
-  if (welt.id === 1) return true;
+  if (lehrer || welt.id === 1) return true;
   const welt1 = WELTEN.find((w) => w.id === 1);
   if (welt.id <= 5) return weltAbgeschlossen(welt1);
   return WELTEN.filter((w) => w.id <= 5).every(weltAbgeschlossen);
@@ -103,6 +111,7 @@ export function weltFrei(welt) {
 /* Ein Level ist offen, wenn das Level davor geschafft ist.
    Bonus-Level öffnen sich ab einer bestimmten Sternezahl der Welt. */
 export function levelFrei(welt, index) {
+  if (lehrer) return true;
   if (!weltFrei(welt)) return false;
   const eintrag = welt.level[index];
   if (eintrag.art === "bonus") return sterneDerWelt(welt) >= welt.bonusAbSternen;

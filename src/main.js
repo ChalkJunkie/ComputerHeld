@@ -139,8 +139,10 @@ function zeigeStart(hinweis) {
     );
     knoepfe.replaceChildren(
       weiter ? knopf("Weiterspielen", "#/karte", { class: "knopf gross" }) : "",
-      el("button", { type: "button", class: weiter ? "knopf" : "knopf gross", klick: neuesAbenteuer }, "Neues Abenteuer"),
-      el("button", { type: "button", class: "knopf", klick: laden }, "Spielstand laden"),
+      fortschritt.lehrer
+        ? knopf("Spielen", "#/karte", { class: "knopf gross" })
+        : el("button", { type: "button", class: weiter ? "knopf" : "knopf gross", klick: neuesAbenteuer }, "Neues Abenteuer"),
+      fortschritt.lehrer ? "" : el("button", { type: "button", class: "knopf", klick: laden }, "Spielstand laden"),
       knopf("Einstellungen", "#/einstellungen"),
     );
   }
@@ -246,7 +248,7 @@ function zeigeKarte() {
   const hier = WELTEN.find((w) => fortschritt.weltFrei(w) && !fortschritt.weltAbgeschlossen(w)) || WELTEN[WELTEN.length - 1];
   const bit = erzeugeSprite(BIT, { pose: "winkend", faktor: 3 });
   bit.classList.add("karten-bit");
-  bit.style.left = `calc(${hier.karte.x}% - 205px)`;
+  bit.style.left = `max(8px, calc(${hier.karte.x}% - 205px))`; // nie über den linken Rand hinaus
   bit.style.top = `calc(${hier.karte.y}% - 40px)`;
   feld.append(bit);
 
@@ -261,7 +263,7 @@ function zeigeKarte() {
       el("h1", { class: "pixel" }, "Weltkarte"),
       steine,
       sternZaehler(fortschritt.sterneGesamt(), WELTEN.reduce((n, w) => n + w.level.length * 3, 0)),
-      el("button", { type: "button", class: "knopf klein speichern-knopf", klick: () => {
+      fortschritt.lehrer ? "" : el("button", { type: "button", class: "knopf klein speichern-knopf", klick: () => {
         const name = speichereSpielstand();
         meldung.textContent = `Gespeichert: ${name} (im Ordner „Downloads“)`;
       } }, "Spielstand speichern"),
@@ -331,7 +333,8 @@ function zeigeLevel(levelId) {
     welt,
     // Nach dem Boss gibt es den Edelstein der Welt
     edelstein: fund.eintrag.art === "boss" ? welt.edelstein : null,
-    schonGeschafft: fortschritt.sterneVon(levelId) > 0,
+    // In der Lehrerversion immer die volle Abfolge (Zeigen, Üben, Anwenden)
+    schonGeschafft: !fortschritt.lehrer && fortschritt.sterneVon(levelId) > 0,
     beiErgebnis: (sterne) => fortschritt.merkeErgebnis(levelId, sterne),
     beiZurueck: () => geheZu(`#/welt/${welt.id}`),
     beiNaechstes: hatNaechstes ? () => geheZu(`#/level/${naechstes.id}`) : null,
@@ -368,7 +371,11 @@ function zeigeEinstellungen() {
       el("section", {},
         auswahl("Schriftgröße", "schrift", [["normal", "Normal"], ["gross", "Groß"], ["sehrgross", "Sehr groß"]]),
       ),
-      el("section", {},
+      fortschritt.lehrer ? el("section", {},
+        el("h2", {}, "Lehrerversion"),
+        el("p", {}, "Alle Welten und Level sind freigeschaltet. Es wird nichts gespeichert: Wer die Seite neu lädt, beginnt von vorn."),
+        el("p", {}, "Die Version für die Kinder erreichst du über ihren eigenen Link."),
+      ) : el("section", {},
         el("h2", {}, "Dein Spielstand"),
         el("p", {}, "Speichere deinen Spielstand als Datei. Damit holst du deine Sterne zurück – auch an einem anderen Computer."),
         el("div", { class: "knopfreihe" },
@@ -401,6 +408,14 @@ function zeigeAktuellenBildschirm() {
   else if (bereich === "level") zeigeLevel(decodeURIComponent(zusatz || ""));
   else if (bereich === "einstellungen") zeigeEinstellungen();
   else zeigeStart();
+}
+
+/* Lehrerversion: dauerhafter Hinweisstreifen unten */
+if (fortschritt.lehrer) {
+  document.documentElement.classList.add("lehrer");
+  document.title = "ComputerHeld – Lehrerversion";
+  document.body.append(el("div", { class: "lehrer-band", role: "note" },
+    "Lehrerversion: alles freigeschaltet, es wird nichts gespeichert. Seite neu laden = von vorn."));
 }
 
 fortschritt.lade();

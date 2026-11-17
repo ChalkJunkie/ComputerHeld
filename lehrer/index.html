@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ComputerHeld – Lehrerversion</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <!--
+    LEHRERVERSION: Dieselben Dateien wie das Spiel für die Kinder,
+    aber mit einer Markierung, die drei Dinge ändert:
+      1. Alle Welten und Level sind von Anfang an freigeschaltet.
+      2. Es wird nichts gespeichert und nichts geladen. Wer die Seite neu
+         lädt, beginnt wieder bei null. Der Spielstand der Kinder auf
+         diesem Rechner bleibt unberührt.
+      3. Bereits gespielte Level zeigen immer die volle Abfolge
+         (Zeigen, Üben, Anwenden), damit alles durchgetestet werden kann.
+    Die Markierung steht in der nächsten Zeile.
+  -->
+  <script>window.COMPUTERHELD_LEHRER = true;</script>
+  <div id="app">
+    <main class="bildschirm">
+      <h1>ComputerHeld – Lehrerversion</h1>
+      <p>Das Spiel wird geladen …</p>
+      <p>Bleibt diese Meldung stehen? Dann wurde die Datei vermutlich per
+         Doppelklick geöffnet. Das Spiel läuft nur über seine Internet-Adresse
+         (GitHub Pages) und braucht JavaScript.</p>
+    </main>
+  </div>
+  <script type="module" src="../src/main.js"></script>
+</body>
+</html>
