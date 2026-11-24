@@ -771,3 +771,8 @@ canvas.sprite { image-rendering: pixelated; display: block; flex: none; }
 .druck-drucker { cursor: default; }
 .sch-dialog-box.mit-typ { gap: 0.4rem; }
 .sch-dialog-box.mit-typ .sch-unter-liste { height: 4.6rem; }
+
+/* Welt-Bildschirm: Speichern-Knopf in der Kopfzeile, Meldung neben dem Thema */
+.welt .kopf { flex-wrap: wrap; row-gap: 0.4rem; }
+.welt-zeile { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.welt-zeile p { margin: 0; }

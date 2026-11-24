@@ -95,6 +95,17 @@ function speichereSpielstand() {
   return dateiname;
 }
 
+/* Der grüne Knopf „Spielstand speichern“ (Weltkarte und Welt-Bildschirm).
+   meldung ist das Element, in dem „Gespeichert: …“ erscheint.
+   In der Lehrerversion gibt es keinen Knopf (dort wird nichts gespeichert). */
+function speichernKnopf(meldung) {
+  if (fortschritt.lehrer) return "";
+  return el("button", { type: "button", class: "knopf klein speichern-knopf", klick: () => {
+    const name = speichereSpielstand();
+    meldung.textContent = `Gespeichert: ${name} (im Ordner „Downloads“)`;
+  } }, "Spielstand speichern");
+}
+
 /* Öffnet die Dateiauswahl; beiFertig(ergebnis) bekommt { ok, meldung } */
 function ladeSpielstand(beiFertig) {
   const auswahl = el("input", { type: "file", accept: ".json,application/json", hidden: true });
@@ -263,10 +274,7 @@ function zeigeKarte() {
       el("h1", { class: "pixel" }, "Weltkarte"),
       steine,
       sternZaehler(fortschritt.sterneGesamt(), WELTEN.reduce((n, w) => n + w.level.length * 3, 0)),
-      fortschritt.lehrer ? "" : el("button", { type: "button", class: "knopf klein speichern-knopf", klick: () => {
-        const name = speichereSpielstand();
-        meldung.textContent = `Gespeichert: ${name} (im Ordner „Downloads“)`;
-      } }, "Spielstand speichern"),
+      speichernKnopf(meldung),
     ),
     feld,
     meldung,
@@ -303,14 +311,16 @@ function zeigeWelt(weltId) {
   const welt = WELTEN.find((w) => String(w.id) === weltId);
   if (!welt || !fortschritt.weltFrei(welt)) return geheZu("#/karte");
 
+  const meldung = el("span", { class: "karten-meldung", role: "status" });
   const seite = bildschirm("welt",
     el("header", { class: "kopf" },
       knopf("Zurück", "#/karte", { class: "knopf klein" }),
       erzeugeSprite(WELT_SYMBOLE[welt.id], { faktor: 3 }),
       el("h1", { class: "pixel" }, `Welt ${welt.id}: ${welt.name}`),
       sternZaehler(fortschritt.sterneDerWelt(welt), welt.level.length * 3),
+      speichernKnopf(meldung),
     ),
-    el("p", { class: "welt-thema" }, welt.thema),
+    el("div", { class: "welt-zeile" }, el("p", { class: "welt-thema" }, welt.thema), meldung),
     el("div", { class: "level-liste" }, ...welt.level.map((_, i) => levelKachel(welt, i))),
   );
   setzeWeltFarben(seite, welt);
